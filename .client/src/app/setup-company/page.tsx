@@ -265,10 +265,7 @@ export default function SetupCompany() {
         </div>
 
         <div className="w-full lg:w-1/2 flex flex-col relative min-h-[400px]">
-          <div className="absolute top-4 left-4 z-10 bg-primary-container border-[3px] border-on-background px-4 py-2 flex items-center gap-2 neo-brutal-shadow">
-            <MapPin size={20} />
-            <span className="font-label-caps uppercase font-black text-sm">Pinpoint Location</span>
-          </div>
+         
           <div className="w-full h-full border-t-[4px] lg:border-t-0 border-on-background relative z-0">
             <DynamicMap location={location} setLocation={setLocation} />
           </div>
