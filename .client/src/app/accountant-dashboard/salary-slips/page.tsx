@@ -83,6 +83,30 @@ export default function SalarySlipsPage() {
     window.print();
   };
 
+  const handleDownload = async (record: PayrollRecord) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(`/api/payroll/${record._id}/download`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!res.ok) throw new Error("Failed to download PDF");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `SalarySlip_${record.period.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      setError(err.message || "Failed to download salary slip");
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12 print:p-0">
       {/* Header (hidden on print) */}
@@ -189,6 +213,13 @@ export default function SalarySlipsPage() {
                   <FileText size={18} /> Salary Slip Details
                 </span>
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleDownload(selectedRecord)}
+                    className="p-1.5 hover:bg-black/10 border-[2px] border-transparent hover:border-black transition-all cursor-pointer"
+                    title="Download PDF"
+                  >
+                    <Download size={18} />
+                  </button>
                   <button
                     onClick={handlePrint}
                     className="p-1.5 hover:bg-black/10 border-[2px] border-transparent hover:border-black transition-all cursor-pointer"

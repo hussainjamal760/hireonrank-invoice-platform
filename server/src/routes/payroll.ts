@@ -1,9 +1,48 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Employee, PayrollRecord, ActivityLog, Payroll } from '../models';
+import { Employee, PayrollRecord, ActivityLog, Payroll, Company } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
 import { AccountingService } from '../services/accountingService';
+import { generateSalarySlipPDF } from '../utils/pdfGenerator';
 
 const router = Router();
+
+/**
+ * GET /payroll/:id/download
+ * Generates and downloads the salary slip PDF for a specific payroll record.
+ */
+router.get(
+  '/:id/download',
+  authenticateToken,
+  requireCompany,
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      const companyId = req.user!.currentCompanyId as string;
+      const record = await PayrollRecord.findOne({ _id: req.params.id, companyId });
+
+      if (!record) {
+        return res.status(404).json({ message: 'Payroll record not found' });
+      }
+
+      // Security: Employees can only download their own slips
+      if (req.user!.role === 'EMPLOYEE' && record.employeeEmail !== req.user!.email) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      const company = await Company.findById(companyId);
+      if (!company) {
+        return res.status(404).json({ message: 'Company not found' });
+      }
+
+      const pdfBuffer = await generateSalarySlipPDF(record, company);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=SalarySlip_${record.period.replace(/\s+/g, '_')}.pdf`);
+      return res.send(Buffer.from(pdfBuffer));
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 /**
  * GET /payroll/summary
