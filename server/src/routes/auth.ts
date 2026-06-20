@@ -28,23 +28,17 @@ export const handlePostLoginRouting = async (user: any) => {
   let memberships = await UserCompany.find({ userId: user._id }).populate('companyId');
 
   if (memberships.length === 0) {
-    // Automatically create a default company for the new user
-    const defaultCompanyName = user.name ? `${user.name}'s Company` : 'My Company';
-    const newCompany = await Company.create({
-      name: defaultCompanyName,
-      ownerId: user._id,
-      createdAt: new Date()
-    });
-
-    const newMembership = await UserCompany.create({
-      userId: user._id,
-      companyId: newCompany._id,
-      role: 'OWNER',
-      createdAt: new Date()
-    });
-
-    // Re-fetch memberships to obtain the populated format
-    memberships = await UserCompany.find({ userId: user._id }).populate('companyId');
+    const token = generateToken(user._id.toString(), user.email, null, null);
+    return {
+      state: 'NO_COMPANY_STATE',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        profilePicture: user.profilePicture
+      }
+    };
   }
 
   if (memberships.length === 1) {

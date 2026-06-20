@@ -17,7 +17,6 @@ export default function Login() {
   const [otpSending, setOtpSending] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-  const [devOtp, setDevOtp] = useState("");
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -106,7 +105,11 @@ export default function Login() {
 
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
-      router.push("/admin-dashboard");
+      if (data.state === "NO_COMPANY_STATE") {
+        router.push("/create-company");
+      } else {
+        router.push("/admin-dashboard");
+      }
     } catch (err: any) {
       setError(err.message || "Failed to log in with Google");
     } finally {
@@ -122,7 +125,6 @@ export default function Login() {
     setOtpSending(true);
     setError("");
     setSuccessMsg("");
-    setDevOtp("");
 
     try {
       const res = await fetch(`/api/auth/send-otp`, {
@@ -133,9 +135,6 @@ export default function Login() {
 
       const data = await handleApiResponse(res);
       setSuccessMsg("Verification code sent to your email!");
-      if (data.otp) {
-        setDevOtp(data.otp);
-      }
     } catch (err: any) {
       setError(err.message || "Something went wrong sending verification code.");
     } finally {
@@ -162,7 +161,11 @@ export default function Login() {
       const data = await handleApiResponse(res);
       // Save token and navigate
       localStorage.setItem("token", data.token);
-      router.push("/admin-dashboard");
+      if (data.state === "NO_COMPANY_STATE") {
+        router.push("/create-company");
+      } else {
+        router.push("/admin-dashboard");
+      }
     } catch (err: any) {
       setError(err.message || "OTP verification failed");
     } finally {
@@ -208,13 +211,7 @@ export default function Login() {
             </div>
           )}
 
-          {/* Dev OTP Box */}
-          {devOtp && (
-            <div className="bg-primary-container border-[3px] border-on-background p-4 neo-brutal-shadow">
-              <p className="font-bold text-sm uppercase">🔧 Development Mode Sandbox OTP</p>
-              <p className="font-display-lg text-3xl font-black mt-2 tracking-widest text-center">{devOtp}</p>
-            </div>
-          )}
+
 
           <motion.form 
             initial={{ opacity: 0, y: 20 }}
