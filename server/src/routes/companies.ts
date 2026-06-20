@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { User, Company, UserCompany, Invitation } from '../models';
+import { User, Company, UserCompany, Invitation, Employee } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
 import cloudinary from '../utils/cloudinary';
 import { sendInvitationEmail } from '../utils/email';
@@ -350,6 +350,28 @@ router.post('/join', authenticateToken, async (req: AuthRequest, res: Response, 
         companyId: invitation.companyId,
         role: invitation.role
       });
+    }
+
+    // Automatically add as an Employee record
+    const userDoc = await User.findById(req.user.userId);
+    let employeeRecord = await Employee.findOne({
+      companyId: invitation.companyId,
+      email: req.user.email
+    });
+
+    if (!employeeRecord) {
+      await Employee.create({
+        companyId: invitation.companyId,
+        userId: req.user.userId,
+        name: userDoc?.name || req.user.email.split('@')[0],
+        email: req.user.email,
+        salary: 0,
+        designation: invitation.role,
+        status: 'ACTIVE'
+      });
+    } else if (!employeeRecord.userId) {
+      employeeRecord.userId = req.user.userId as any;
+      await employeeRecord.save();
     }
 
     const company = await Company.findById(invitation.companyId);
