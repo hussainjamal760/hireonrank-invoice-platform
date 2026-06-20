@@ -38,6 +38,35 @@ router.get('/my', authenticateToken, async (req: AuthRequest, res: Response, nex
   }
 });
 
+router.get('/current', authenticateToken, requireCompany, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    if (!req.user || !req.user.currentCompanyId) {
+      return res.status(401).json({ message: 'Unauthorized or no active company' });
+    }
+
+    const company = await Company.findById(req.user.currentCompanyId);
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      company: {
+        id: company._id,
+        name: company.name,
+        address: company.address,
+        country: company.country,
+        companyType: company.companyType,
+        employeesCount: company.employeesCount,
+        departments: company.departments,
+        logo: company.logo
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/select', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
   try {
     if (!req.user) {

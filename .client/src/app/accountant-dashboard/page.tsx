@@ -6,6 +6,9 @@ import {
   Building2, Users, FileText, Banknote, Wallet,
   TrendingUp, TrendingDown, Clock, Activity, Loader2
 } from "lucide-react";
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from "recharts";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -41,6 +44,8 @@ export default function AccountantDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [revenueChart, setRevenueChart] = useState<any[]>([]);
+  const [invoiceChart, setInvoiceChart] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -61,8 +66,19 @@ export default function AccountantDashboard() {
       });
       const activityData = await activityRes.json();
 
-      // 3. Fetch payroll invoices to calculate status breakdown
-      // First, decode companyId from token
+      // 3. Fetch Revenue Chart
+      const revenueChartRes = await fetch("/api/dashboard/revenue-chart", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const revenueChartData = await revenueChartRes.json();
+
+      // 4. Fetch Invoice Chart
+      const invoiceChartRes = await fetch("/api/dashboard/invoice-chart", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const invoiceChartData = await invoiceChartRes.json();
+
+      // 5. Fetch payroll invoices to calculate status breakdown
       const base64Url = token.split(".")[1];
       const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
       const decoded = JSON.parse(atob(base64));
@@ -81,6 +97,8 @@ export default function AccountantDashboard() {
 
       setStats(statsData);
       setLogs(Array.isArray(activityData) ? activityData : []);
+      setRevenueChart(revenueChartData);
+      setInvoiceChart(invoiceChartData);
       setInvoices(invoicesData);
     } catch (err: any) {
       console.error(err);
@@ -116,7 +134,7 @@ export default function AccountantDashboard() {
   const totalPayrollCost = invoices.reduce((sum, inv) => sum + inv.amount, 0);
 
   return (
-    <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12">
+    <div className="max-w-[1400px] mx-auto flex flex-col gap-8 pb-12">
       {/* Header */}
       <motion.div 
         initial={{ opacity: 0, x: -20 }}
@@ -138,74 +156,136 @@ export default function AccountantDashboard() {
         </button>
       </motion.div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Total Employees */}
+      {/* KPI Stats Cards - Row 1 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* KPI 1: Total Revenue */}
+        <div className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15] flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 bg-[#FACC15] border-[2px] border-black flex items-center justify-center text-black shadow-[2px_2px_0_0_#000000]">
+              <Banknote size={24} />
+            </div>
+            {stats?.trends?.revenue && (
+              <span className={`text-black border-[2px] border-black px-2 py-0.5 text-xs font-black shadow-[1px_1px_0_0_#000000] ${stats.trends.revenue.startsWith('-') ? 'bg-red-400' : 'bg-emerald-400'}`}>
+                {stats.trends.revenue} MoM
+              </span>
+            )}
+          </div>
+          <div>
+            <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Collected Revenue</h3>
+            <div className="font-display-lg text-3xl xl:text-4xl text-black font-black font-mono">
+              ${stats?.totalRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 2: Pending Revenue */}
+        <div className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15] flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 bg-white border-[2px] border-black flex items-center justify-center text-black shadow-[2px_2px_0_0_#000000]">
+              <TrendingUp size={24} />
+            </div>
+            {stats?.trends?.pendingRevenue && (
+              <span className={`text-black border-[2px] border-black px-2 py-0.5 text-xs font-black shadow-[1px_1px_0_0_#000000] ${stats.trends.pendingRevenue.startsWith('-') ? 'bg-emerald-400' : 'bg-amber-400'}`}>
+                {stats.trends.pendingRevenue} MoM
+              </span>
+            )}
+          </div>
+          <div>
+            <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Pending Revenue</h3>
+            <div className="font-display-lg text-3xl xl:text-4xl text-black font-black font-mono">
+              ${stats?.pendingRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 3: Total Employees */}
         <div className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15] flex flex-col justify-between">
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 bg-white border-[2px] border-black flex items-center justify-center text-black shadow-[2px_2px_0_0_#000000]">
               <Users size={24} />
             </div>
             {stats?.trends?.employees && (
-              <span className="bg-emerald-400 text-black border-[2px] border-black px-2 py-0.5 text-xs font-black shadow-[1px_1px_0_0_#000000]">
+              <span className={`text-black border-[2px] border-black px-2 py-0.5 text-xs font-black shadow-[1px_1px_0_0_#000000] ${stats.trends.employees.startsWith('-') ? 'bg-red-400' : 'bg-emerald-400'}`}>
                 {stats.trends.employees} MoM
               </span>
             )}
           </div>
           <div>
-            <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Total Active Employees</h3>
-            <div className="font-display-lg text-4xl text-black font-black font-mono">{stats?.totalEmployees || 0}</div>
+            <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Active Employees</h3>
+            <div className="font-display-lg text-3xl xl:text-4xl text-black font-black font-mono">{stats?.totalEmployees || 0}</div>
           </div>
         </div>
 
-        {/* Total Payroll Cost */}
+        {/* KPI 4: Total Payroll */}
         <div className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15] flex flex-col justify-between">
           <div className="flex justify-between items-start mb-6">
             <div className="w-12 h-12 bg-white border-[2px] border-black flex items-center justify-center text-black shadow-[2px_2px_0_0_#000000]">
               <Wallet size={24} />
             </div>
             {stats?.trends?.payroll && (
-              <span className="bg-emerald-400 text-black border-[2px] border-black px-2 py-0.5 text-xs font-black shadow-[1px_1px_0_0_#000000]">
+              <span className={`text-black border-[2px] border-black px-2 py-0.5 text-xs font-black shadow-[1px_1px_0_0_#000000] ${stats.trends.payroll.startsWith('-') ? 'bg-emerald-400' : 'bg-amber-400'}`}>
                 {stats.trends.payroll} MoM
               </span>
             )}
           </div>
           <div>
             <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Total Payroll Cost</h3>
-            <div className="font-display-lg text-4xl text-black font-black font-mono">
-              ${totalPayrollCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-          </div>
-        </div>
-
-        {/* Invoices Status Tracking */}
-        <div className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15] flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 bg-white border-[2px] border-black flex items-center justify-center text-black shadow-[2px_2px_0_0_#000000]">
-              <FileText size={24} />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-2 font-bold">Payroll Invoices Status</h3>
-            <div className="flex gap-4">
-              <div>
-                <span className="text-xs font-bold text-black/60">PAID</span>
-                <div className="font-mono text-2xl font-black text-emerald-600">{paidCount}</div>
-              </div>
-              <div className="border-l-[2px] border-black/20 pl-4">
-                <span className="text-xs font-bold text-black/60">PENDING</span>
-                <div className="font-mono text-2xl font-black text-amber-500">{pendingCount}</div>
-              </div>
-              <div className="border-l-[2px] border-black/20 pl-4">
-                <span className="text-xs font-bold text-black/60">TOTAL</span>
-                <div className="font-mono text-2xl font-black text-black">{totalInvoicesCount}</div>
-              </div>
+            <div className="font-display-lg text-3xl xl:text-4xl text-black font-black font-mono">
+              ${stats?.totalPayroll?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Lower Layout: Activity Log and Chart */}
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Revenue Chart */}
+        <div className="bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000] flex flex-col h-[400px]">
+          <h2 className="text-black font-display-md text-xl uppercase font-black tracking-tight border-b-[3px] border-black pb-4 mb-6 flex justify-between items-center">
+            <span>Revenue Growth (6 Mo)</span>
+            <Banknote size={20} className="text-[#FACC15]" />
+          </h2>
+          <div className="flex-1 w-full font-mono text-sm">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={revenueChart}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#000000" vertical={false} opacity={0.2} />
+                <XAxis dataKey="name" stroke="#000000" tick={{ fill: '#000000', fontWeight: 'bold' }} />
+                <YAxis stroke="#000000" tick={{ fill: '#000000', fontWeight: 'bold' }} tickFormatter={(value) => `$${value}`} />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                  contentStyle={{ backgroundColor: '#ffffff', border: '3px solid #000000', borderRadius: 0, boxShadow: '4px 4px 0 0 #FACC15', fontWeight: 'bold' }}
+                />
+                <Bar dataKey="revenue" fill="#000000" stroke="#000000" strokeWidth={2} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Invoices Chart */}
+        <div className="bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000] flex flex-col h-[400px]">
+          <h2 className="text-black font-display-md text-xl uppercase font-black tracking-tight border-b-[3px] border-black pb-4 mb-6 flex justify-between items-center">
+            <span>Invoice Volume (6 Mo)</span>
+            <FileText size={20} className="text-[#FACC15]" />
+          </h2>
+          <div className="flex-1 w-full font-mono text-sm">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={invoiceChart}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#000000" vertical={false} opacity={0.2} />
+                <XAxis dataKey="name" stroke="#000000" tick={{ fill: '#000000', fontWeight: 'bold' }} />
+                <YAxis stroke="#000000" tick={{ fill: '#000000', fontWeight: 'bold' }} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#ffffff', border: '3px solid #000000', borderRadius: 0, boxShadow: '4px 4px 0 0 #FACC15', fontWeight: 'bold' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontWeight: 'bold' }} />
+                <Line type="monotone" dataKey="sent" stroke="#FACC15" strokeWidth={4} dot={{ stroke: '#000000', strokeWidth: 2, fill: '#FACC15', r: 5 }} name="Sent Invoices" />
+                <Line type="monotone" dataKey="paid" stroke="#10b981" strokeWidth={4} dot={{ stroke: '#000000', strokeWidth: 2, fill: '#10b981', r: 5 }} name="Paid Invoices" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Lower Layout: Activity Log and Operations Guide */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Activity Logs (Takes 2 Columns) */}
         <div className="lg:col-span-2 bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000] flex flex-col">
@@ -260,6 +340,10 @@ export default function AccountantDashboard() {
               <li className="flex items-start gap-2">
                 <span className="border-[2px] border-black bg-white w-6 h-6 flex items-center justify-center shrink-0 font-mono text-xs">3</span>
                 <span>Run bulk monthly payroll and auto-generate invoice ledgers.</span>
+              </li>
+              <li className="flex items-start gap-2 pt-4 border-t-[2px] border-black/20 mt-4">
+                <span className="border-[2px] border-black bg-emerald-400 w-6 h-6 flex items-center justify-center shrink-0 font-mono text-xs text-black">4</span>
+                <span>Generate custom client invoices and track payments.</span>
               </li>
             </ul>
           </div>

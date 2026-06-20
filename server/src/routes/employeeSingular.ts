@@ -53,6 +53,8 @@ router.post(
         companyId,
         baseSalary: salary,
         currency,
+        bonusThisMonth: 0,
+        deductionThisMonth: 0,
         allowances: [],
         taxRules: []
       });
@@ -84,7 +86,7 @@ router.put(
   requireRole(['OWNER', 'ADMIN', 'ACCOUNTANT']),
   async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
     try {
-      const { baseSalary, currency, allowances, taxRules } = req.body;
+      const { baseSalary, currency, bonusThisMonth, deductionThisMonth, allowances, taxRules } = req.body;
 
       // Find or create profile
       let profile = await EmployeeProfile.findOne({ employeeId: req.params.id });
@@ -101,6 +103,8 @@ router.put(
 
       if (baseSalary !== undefined) profile.baseSalary = baseSalary;
       if (currency !== undefined) profile.currency = currency;
+      if (bonusThisMonth !== undefined) profile.bonusThisMonth = bonusThisMonth;
+      if (deductionThisMonth !== undefined) profile.deductionThisMonth = deductionThisMonth;
       if (allowances !== undefined) profile.allowances = allowances;
       if (taxRules !== undefined) profile.taxRules = taxRules;
 
@@ -139,6 +143,8 @@ router.get(
           companyId,
           baseSalary: employee.salary || 0,
           currency: 'USD',
+          bonusThisMonth: 0,
+          deductionThisMonth: 0,
           allowances: [],
           taxRules: []
         });

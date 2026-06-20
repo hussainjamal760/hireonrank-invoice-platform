@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { Employee, Invoice, PayrollRecord, ActivityLog, UserCompany } from '../models';
+import mongoose from 'mongoose';
 import { authenticateToken, requireCompany, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -32,7 +33,7 @@ router.get(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const companyId = req.user.currentCompanyId as string;
+      const companyId = new mongoose.Types.ObjectId(req.user.currentCompanyId as string);
 
       // Date boundaries for current and previous months
       const now = new Date();
@@ -176,7 +177,7 @@ router.get(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const companyId = req.user.currentCompanyId as string;
+      const companyId = new mongoose.Types.ObjectId(req.user.currentCompanyId as string);
 
       // Calculate date 6 months ago from the start of the current month
       const now = new Date();
@@ -244,7 +245,7 @@ router.get(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const companyId = req.user.currentCompanyId as string;
+      const companyId = new mongoose.Types.ObjectId(req.user.currentCompanyId as string);
 
       const now = new Date();
       const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);

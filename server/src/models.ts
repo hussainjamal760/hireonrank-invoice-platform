@@ -372,6 +372,8 @@ export interface IEmployeeProfile extends Document {
   companyId: mongoose.Types.ObjectId;
   baseSalary: number;
   currency: string;
+  bonusThisMonth?: number;
+  deductionThisMonth?: number;
   allowances: IAllowance[];
   taxRules: ITaxRule[];
   createdAt: Date;
@@ -393,6 +395,8 @@ const EmployeeProfileSchema: Schema = new Schema({
   companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
   baseSalary: { type: Number, required: true, default: 0 },
   currency: { type: String, required: true, default: 'USD' },
+  bonusThisMonth: { type: Number, default: 0 },
+  deductionThisMonth: { type: Number, default: 0 },
   allowances: { type: [AllowanceSchema], default: [] },
   taxRules: { type: [TaxRuleSchema], default: [] },
   createdAt: { type: Date, default: Date.now }

@@ -33,6 +33,8 @@ interface TaxRule {
 interface EmployeeProfile {
   baseSalary: number;
   currency: string;
+  bonusThisMonth?: number;
+  deductionThisMonth?: number;
   allowances: Allowance[];
   taxRules: TaxRule[];
 }
@@ -109,6 +111,8 @@ export default function EmployeesTab() {
       setEmployeeProfile(data.profile || {
         baseSalary: employee.salary,
         currency: "USD",
+        bonusThisMonth: 0,
+        deductionThisMonth: 0,
         allowances: [],
         taxRules: []
       });
@@ -191,10 +195,12 @@ export default function EmployeesTab() {
   // Helper calculation
   const calculateNetPay = () => {
     if (!employeeProfile) return 0;
-    const base = employeeProfile.baseSalary;
+    const base = employeeProfile.baseSalary || 0;
+    const bonus = employeeProfile.bonusThisMonth || 0;
+    const deduction = employeeProfile.deductionThisMonth || 0;
     const totalAllowances = employeeProfile.allowances.reduce((sum, a) => sum + a.amount, 0);
     const totalTaxes = employeeProfile.taxRules.reduce((sum, t) => sum + (base * (t.rate / 100)), 0);
-    return Math.max(0, base + totalAllowances - totalTaxes);
+    return Math.max(0, base + bonus + totalAllowances - deduction - totalTaxes);
   };
 
   return (
@@ -336,15 +342,54 @@ export default function EmployeesTab() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-6">
-                  {/* Base Salary */}
-                  <div className="flex flex-col gap-2">
-                    <label className="font-label-caps uppercase text-xs font-bold">Base Salary (USD)</label>
-                    <input
-                      type="number"
-                      value={employeeProfile.baseSalary || ""}
-                      onChange={(e) => setEmployeeProfile({ ...employeeProfile, baseSalary: parseFloat(e.target.value) || 0 })}
-                      className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15] font-mono text-lg font-bold"
-                    />
+                  {/* Base Salary and Currency */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2">
+                      <label className="font-label-caps uppercase text-xs font-bold">Base Salary</label>
+                      <input
+                        type="number"
+                        value={employeeProfile.baseSalary || ""}
+                        onChange={(e) => setEmployeeProfile({ ...employeeProfile, baseSalary: parseFloat(e.target.value) || 0 })}
+                        className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15] font-mono text-lg font-bold"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="font-label-caps uppercase text-xs font-bold">Currency</label>
+                      <select
+                        value={employeeProfile.currency || "USD"}
+                        onChange={(e) => setEmployeeProfile({ ...employeeProfile, currency: e.target.value })}
+                        className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15] font-mono text-lg font-bold appearance-none cursor-pointer"
+                      >
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="PKR">PKR (Rs)</option>
+                        <option value="AUD">AUD (A$)</option>
+                        <option value="CAD">CAD (C$)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Bonus and Deductions this month */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2">
+                      <label className="font-label-caps uppercase text-xs font-bold text-green-700">Bonus This Month</label>
+                      <input
+                        type="number"
+                        value={employeeProfile.bonusThisMonth || ""}
+                        onChange={(e) => setEmployeeProfile({ ...employeeProfile, bonusThisMonth: parseFloat(e.target.value) || 0 })}
+                        className="bg-[#E5F6E5] border-[3px] border-green-700 p-3 font-body-md focus:outline-none focus:bg-green-100 font-mono text-lg font-bold text-green-900"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="font-label-caps uppercase text-xs font-bold text-red-700">Deduction This Month</label>
+                      <input
+                        type="number"
+                        value={employeeProfile.deductionThisMonth || ""}
+                        onChange={(e) => setEmployeeProfile({ ...employeeProfile, deductionThisMonth: parseFloat(e.target.value) || 0 })}
+                        className="bg-[#FFE5E5] border-[3px] border-red-700 p-3 font-body-md focus:outline-none focus:bg-red-100 font-mono text-lg font-bold text-red-900"
+                      />
+                    </div>
                   </div>
 
                   {/* Allowances section */}
