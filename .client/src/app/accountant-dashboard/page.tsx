@@ -133,6 +133,13 @@ export default function AccountantDashboard() {
 
   const totalPayrollCost = invoices.reduce((sum, inv) => sum + inv.amount, 0);
 
+  const formatCurrency = (val: number | undefined) => {
+    if (!val) return '$0.00';
+    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
+    if (val >= 1000) return `$${(val / 1000).toFixed(1)}K`;
+    return `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col gap-8 pb-12">
       {/* Header */}
@@ -173,7 +180,7 @@ export default function AccountantDashboard() {
           <div>
             <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Collected Revenue</h3>
             <div className="font-display-lg text-3xl xl:text-4xl text-black font-black font-mono">
-              ${stats?.totalRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+              {formatCurrency(stats?.totalRevenue)}
             </div>
           </div>
         </div>
@@ -193,7 +200,7 @@ export default function AccountantDashboard() {
           <div>
             <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Pending Revenue</h3>
             <div className="font-display-lg text-3xl xl:text-4xl text-black font-black font-mono">
-              ${stats?.pendingRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+              {formatCurrency(stats?.pendingRevenue)}
             </div>
           </div>
         </div>
@@ -231,7 +238,7 @@ export default function AccountantDashboard() {
           <div>
             <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Total Payroll Cost</h3>
             <div className="font-display-lg text-3xl xl:text-4xl text-black font-black font-mono">
-              ${stats?.totalPayroll?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+              {formatCurrency(stats?.totalPayroll)}
             </div>
           </div>
         </div>
@@ -297,7 +304,7 @@ export default function AccountantDashboard() {
               No recent accounting operations found.
             </div>
           ) : (
-            <div className="flex flex-col gap-6 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+            <div className="flex flex-col gap-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               {logs.map((log, i) => (
                 <div key={log._id} className="flex gap-4 items-start group">
                   <div className="relative flex flex-col items-center shrink-0">
