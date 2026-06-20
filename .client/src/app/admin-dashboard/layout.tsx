@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import { 
   Home, Building2, Users, CreditCard, BarChart2, 
   FileText, Banknote, Ticket, ScrollText, Bell, 
-  Settings, Menu, X, Command
+  Settings, Menu, X, Command,
+  Zap
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -40,8 +41,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       >
         <div className="h-20 flex items-center justify-between px-5 shrink-0 border-b border-white/[0.05]">
           <div className={`flex items-center gap-3 overflow-hidden transition-all duration-300 ${isSidebarOpen ? "w-full opacity-100" : "w-0 opacity-0"}`}>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FACC15] to-[#f97316] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(250,204,21,0.5)]">
-              <Command size={18} className="text-black" />
+            <div className="w-8 h-8 rounded-lg bg-[#FACC15] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(250,204,21,0.5)]">
+              <Zap size={18} className="text-black" />
             </div>
             <span className="font-display-lg text-lg uppercase font-black tracking-widest whitespace-nowrap text-white">
               ADMIN
