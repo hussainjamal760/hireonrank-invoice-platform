@@ -45,8 +45,8 @@ export function Footer() {
           © 2026 Voicy. Built for precision.
         </div>
         <div className="flex gap-6">
-          <Link className="font-label-caps uppercase text-on-surface-variant hover:text-primary transition-colors font-bold" href="#">Terms</Link>
-          <Link className="font-label-caps uppercase text-on-surface-variant hover:text-primary transition-colors font-bold" href="#">Privacy</Link>
+          <Link className="font-label-caps uppercase text-on-surface-variant hover:text-primary transition-colors font-bold" href="/terms">Terms</Link>
+          <Link className="font-label-caps uppercase text-on-surface-variant hover:text-primary transition-colors font-bold" href="/privacy">Privacy</Link>
         </div>
       </div>
     </footer>
