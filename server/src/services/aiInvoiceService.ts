@@ -2,6 +2,8 @@ import Groq from 'groq-sdk';
 
 export interface AIParsedInvoice {
   client: string;
+  clientEmail?: string;
+  currency: string;
   items: { name: string; price: number }[];
   total: number;
 }
@@ -10,13 +12,18 @@ const SYSTEM_PROMPT = `You are an invoice data extractor. Given a natural langua
 
 RULES:
 1. Extract the client/company name. If none mentioned, use "General Client".
-2. Extract each item/service with its price.
-3. Calculate the total as the sum of all item prices.
-4. Return ONLY valid JSON, no markdown, no explanation, no extra text.
+2. Extract the client's email if mentioned. If not, omit it or use empty string.
+3. Extract the currency mentioned (e.g. USD, EUR, PKR, INR). If no currency is explicitly mentioned, default to "USD".
+4. Extract each item/service with its price.
+5. Calculate the total as the sum of all item prices.
+6. If the user input is conversational or in another language (like Roman Urdu/Hindi), still extract the relevant items and translate their names to English if possible.
+7. Return ONLY valid JSON, no markdown, no explanation, no extra text.
 
 OUTPUT FORMAT (strict JSON only):
 {
   "client": "Client Name",
+  "clientEmail": "client@example.com",
+  "currency": "USD",
   "items": [
     { "name": "Service description", "price": 500 },
     { "name": "Another service", "price": 50 }
@@ -54,6 +61,7 @@ export async function parseInvoiceText(text: string): Promise<AIParsedInvoice> {
         model: 'llama-3.1-8b-instant',
         temperature: 0.2,
         max_tokens: 1024,
+        response_format: { type: 'json_object' }
       });
 
       const rawOutput = chatCompletion.choices[0]?.message?.content?.trim();
@@ -99,6 +107,12 @@ function validateInvoiceSchema(data: any): AIParsedInvoice {
     ? data.client.trim()
     : 'General Client';
 
+  const clientEmail = typeof data.clientEmail === 'string' ? data.clientEmail.trim() : undefined;
+  
+  const currency = typeof data.currency === 'string' && data.currency.trim()
+    ? data.currency.trim().toUpperCase()
+    : 'USD';
+
   // Validate items
   if (!Array.isArray(data.items) || data.items.length === 0) {
     throw new Error('AI output has no items');
@@ -123,6 +137,8 @@ function validateInvoiceSchema(data: any): AIParsedInvoice {
 
   return {
     client,
+    clientEmail,
+    currency,
     items,
     total: roundedTotal
   };

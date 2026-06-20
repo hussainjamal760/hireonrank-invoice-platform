@@ -18,6 +18,7 @@ interface Employee {
   department?: string;
   salary: number;
   status: string;
+  currency?: string;
 }
 
 interface Allowance {
@@ -47,6 +48,18 @@ export default function EmployeesTab() {
   const [success, setSuccess] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("All");
+
+  const getCurrencySymbol = (currencyCode: string) => {
+    switch(currencyCode?.toUpperCase()) {
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'INR': return '₹';
+      case 'PKR': return 'Rs ';
+      case 'AUD': return 'A$';
+      case 'CAD': return 'C$';
+      case 'USD': default: return '$';
+    }
+  };
 
   const uniqueDepartments = ["All", ...Array.from(new Set(employees.map(e => e.department).filter(Boolean)))];
 
@@ -295,7 +308,7 @@ export default function EmployeesTab() {
                     <td className="p-4 border-r-[2px] border-black font-bold text-xs">{emp.email}</td>
                     <td className="p-4 border-r-[2px] border-black">{emp.department || "N/A"}</td>
                     <td className="p-4 border-r-[2px] border-black">{emp.designation || "N/A"}</td>
-                    <td className="p-4 border-r-[2px] border-black font-bold">${emp.salary?.toLocaleString()}</td>
+                    <td className="p-4 border-r-[2px] border-black font-bold">{getCurrencySymbol(emp.currency || 'USD')}{emp.salary?.toLocaleString()}</td>
                     <td className="p-4 text-center">
                       <button
                         onClick={() => handleOpenProfile(emp)}
@@ -404,7 +417,7 @@ export default function EmployeesTab() {
                       <div className="flex flex-wrap gap-3 mb-4">
                         {employeeProfile.allowances.map((allow, idx) => (
                           <div key={idx} className="bg-white border-[2px] border-black px-3 py-1.5 flex items-center gap-3 shadow-[2px_2px_0_0_#000000] font-mono text-xs font-bold">
-                            <span>{allow.name}: ${allow.amount}</span>
+                            <span>{allow.name}: {getCurrencySymbol(employeeProfile.currency || 'USD')}{allow.amount}</span>
                             <button onClick={() => handleDeleteAllowance(idx)} className="text-red-500 hover:text-red-700">
                               <Trash2 size={14} />
                             </button>

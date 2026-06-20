@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Invoice, ActivityLog } from '../models';
+import { Invoice, ActivityLog, Client } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
 import { parseInvoiceText } from '../services/aiInvoiceService';
 import crypto from 'crypto';
@@ -63,6 +63,32 @@ router.post(
       // 1. Call AI parsing service
       const parsedData = await parseInvoiceText(text);
 
+      // Try to find client in DB to auto-fill email and address
+      let clientEmail = parsedData.clientEmail;
+      let clientId: any = undefined;
+      let clientAddress: string | undefined = undefined;
+
+      if (parsedData.client !== 'General Client' || parsedData.clientEmail) {
+        const query: any = { companyId: req.user.currentCompanyId };
+        const conditions = [];
+        if (parsedData.client && parsedData.client !== 'General Client') {
+          conditions.push({ name: { $regex: new RegExp(`^${parsedData.client}$`, 'i') } });
+        }
+        if (parsedData.clientEmail) {
+          conditions.push({ email: { $regex: new RegExp(`^${parsedData.clientEmail}$`, 'i') } });
+        }
+        if (conditions.length > 0) {
+          query.$or = conditions;
+          const foundClient = await Client.findOne(query);
+          if (foundClient) {
+            clientId = foundClient._id;
+            clientEmail = foundClient.email || clientEmail;
+            clientAddress = foundClient.address;
+            parsedData.client = foundClient.name;
+          }
+        }
+      }
+
       // 2. Map items into DB schema structure
       const dbItems = parsedData.items.map((item) => ({
         description: item.name,
@@ -84,8 +110,12 @@ router.post(
       // 6. Create the invoice
       const invoice = await Invoice.create({
         companyId: req.user.currentCompanyId,
+        clientId,
         invoiceNumber,
         clientName: parsedData.client,
+        clientEmail,
+        clientAddress,
+        currency: parsedData.currency,
         items: calculatedItems,
         subtotal,
         taxRate: effectiveTaxRate,

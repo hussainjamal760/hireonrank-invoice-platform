@@ -432,7 +432,49 @@ router.get(
           filter.employeeId = employee._id;
         }
 
-        const records = await PayrollRecord.find(filter).populate('employeeId').sort({ createdAt: -1 });
+        const oldRecords = await PayrollRecord.find(filter).populate('employeeId').sort({ createdAt: -1 }).lean();
+        const { PayrollInvoice, Payroll, EmployeeProfile } = await import('../models');
+        const profiles = await EmployeeProfile.find({ companyId: id }).lean();
+
+        const getCurrency = (empId: string) => {
+          const prof = profiles.find((p: any) => p.employeeId.toString() === empId.toString());
+          return prof ? prof.currency : 'USD';
+        };
+
+        const mappedOldRecords = oldRecords.map((r: any) => ({
+          _id: r._id,
+          employeeId: r.employeeId,
+          month: r.period,
+          baseSalary: r.baseSalary,
+          totalAllowances: r.bonuses || 0,
+          totalTax: r.deductions || 0,
+          netSalary: r.netPay,
+          status: r.status,
+          currency: getCurrency(r.employeeId?._id || r.employeeId),
+          createdAt: r.createdAt
+        }));
+
+        const newPayrolls = await Payroll.find(filter).populate('employeeId').sort({ createdAt: -1 }).lean();
+        const newInvoices = await PayrollInvoice.find({ companyId: id }).lean();
+        
+        const mappedNewRecords = newPayrolls.map((p: any) => {
+          const inv = newInvoices.find((i: any) => i.employeeId.toString() === p.employeeId._id.toString() && i.month === p.month);
+          return {
+            _id: inv ? inv._id : p._id, // Use invoice ID so download and status endpoints work seamlessly
+            employeeId: p.employeeId,
+            month: p.month,
+            baseSalary: p.baseSalary,
+            totalAllowances: p.totalAllowances,
+            totalTax: p.totalTax,
+            netSalary: p.netSalary,
+            status: inv ? (inv.status === 'generated' ? 'PROCESSED' : inv.status.toUpperCase()) : 'PROCESSED',
+            currency: getCurrency(p.employeeId?._id || p.employeeId),
+            createdAt: p.createdAt
+          };
+        });
+
+        const records = [...mappedNewRecords, ...mappedOldRecords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
         return res.status(200).json({ success: true, records });
       }
 
@@ -494,7 +536,14 @@ router.patch(
         return res.status(400).json({ message: 'Status is required' });
       }
 
-      const record = await PayrollRecord.findById(req.params.id);
+      let recordType = 'old';
+      let record: any = await PayrollRecord.findById(req.params.id);
+
+      if (!record) {
+        const { PayrollInvoice } = await import('../models');
+        record = await PayrollInvoice.findById(req.params.id);
+        if (record) recordType = 'new';
+      }
 
       if (!record) {
         return res.status(404).json({ message: 'Payroll record not found' });
@@ -504,19 +553,23 @@ router.patch(
         return res.status(403).json({ message: 'Forbidden: Record does not belong to your company' });
       }
 
-      // Validate status transitions
-      const validTransitions: Record<string, string> = {
-        PENDING: 'PROCESSED',
-        PROCESSED: 'PAID'
-      };
+      if (recordType === 'new') {
+        const newStatus = status === 'PAID' ? 'paid' : status.toLowerCase();
+        record.status = newStatus;
+      } else {
+        // Validate status transitions
+        const validTransitions: Record<string, string> = {
+          PENDING: 'PROCESSED',
+          PROCESSED: 'PAID'
+        };
 
-      if (validTransitions[record.status] !== status) {
-        return res.status(400).json({
-          message: `Invalid status transition: ${record.status} -> ${status}. Allowed: ${record.status} -> ${validTransitions[record.status] || 'none (terminal state)'}`
-        });
+        if (validTransitions[record.status] !== status && record.status !== status) {
+          return res.status(400).json({
+            message: `Invalid status transition: ${record.status} -> ${status}. Allowed: ${record.status} -> ${validTransitions[record.status] || 'none (terminal state)'}`
+          });
+        }
+        record.status = status;
       }
-
-      record.status = status;
 
       // Set paidAt timestamp when marking as PAID
       if (status === 'PAID') {
@@ -531,12 +584,12 @@ router.patch(
           companyId,
           userId: req.user!.userId,
           action: 'PAYROLL_PAID',
-          description: `Payroll record for ${record.employeeName} (${record.period}) marked as PAID`,
+          description: `Payroll record marked as PAID`,
           metadata: {
             payrollRecordId: record._id,
             employeeId: record.employeeId,
-            period: record.period,
-            netPay: record.netPay
+            period: record.period || record.month,
+            netPay: record.netPay || record.amount
           }
         });
       }

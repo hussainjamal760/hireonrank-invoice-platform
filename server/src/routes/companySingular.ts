@@ -68,8 +68,20 @@ router.post('/create', authenticateToken, async (req: AuthRequest, res: Response
 router.get('/employees', authenticateToken, requireCompany, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
   try {
     const companyId = req.user!.currentCompanyId as string;
-    const employees = await Employee.find({ companyId });
-    return res.status(200).json({ success: true, employees });
+    const { EmployeeProfile } = await import('../models');
+    
+    const employees = await Employee.find({ companyId }).lean();
+    const profiles = await EmployeeProfile.find({ companyId }).lean();
+    
+    const employeesWithCurrency = employees.map(emp => {
+      const profile = profiles.find(p => p.employeeId.toString() === emp._id.toString());
+      return {
+        ...emp,
+        currency: profile ? profile.currency : 'USD'
+      };
+    });
+
+    return res.status(200).json({ success: true, employees: employeesWithCurrency });
   } catch (err) {
     next(err);
   }
