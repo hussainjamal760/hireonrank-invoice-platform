@@ -29,8 +29,8 @@ interface Branding {
   companyAddress: string;
   website: string;
   phone: string;
-  defaultNotes: string;
-  defaultTerms: string;
+  defaultNotes?: string;
+  defaultTerms?: string;
 }
 
 interface ThemeSettings {
@@ -53,9 +53,9 @@ interface LayoutSettings {
   borderRadius: number;
   tableStyle: string;
   pageMargins: number;
-  structure: string;
-  watermark: boolean;
-  backgroundPattern: string;
+  structure?: string;
+  watermark?: boolean;
+  backgroundPattern?: string;
 }
 
 interface SavedTemplate {

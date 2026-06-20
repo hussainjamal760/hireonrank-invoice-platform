@@ -10,6 +10,8 @@ export interface UserPayload {
 
 export interface AuthRequest extends Request {
   user?: UserPayload;
+  file?: any;
+  files?: any;
 }
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {

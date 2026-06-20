@@ -569,7 +569,7 @@ router.post(
 
       // Log activity
       await ActivityLog.create({
-        companyId,
+        companyId: companyId!,
         userId: req.user!.userId,
         action: 'INVOICE_SENT',
         description: `Invoice ${invoice.invoiceNumber} was sent to ${invoice.clientEmail}`,

@@ -256,7 +256,7 @@ export default function InvoicesTab() {
           >
             <ShieldAlert size={24} className="shrink-0" />
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="ml-auto hover:opacity-70"><X size={16} /></button>
+            <button onClick={() => setError("")} className="ml-auto hover:opacity-70"><X size={16} /></button>
           </motion.div>
         )}
 
@@ -269,7 +269,7 @@ export default function InvoicesTab() {
           >
             <CheckCircle2 size={24} className="shrink-0" />
             <span>{success}</span>
-            <button onClick={() => setSuccess(null)} className="ml-auto hover:opacity-70"><X size={16} /></button>
+            <button onClick={() => setSuccess("")} className="ml-auto hover:opacity-70"><X size={16} /></button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -499,7 +499,7 @@ export default function InvoicesTab() {
                         if (!res.ok) throw new Error(data.message || 'Failed to send email');
                         setSuccess("Invoice sent successfully via email!");
                         setShowDeliveryModal(null);
-                        setTimeout(() => setSuccess(null), 3000);
+                        setTimeout(() => setSuccess(""), 3000);
                         fetchInvoices();
                       } catch (err: any) {
                         setError(err.message || 'Error sending email');
@@ -517,7 +517,7 @@ export default function InvoicesTab() {
                         navigator.clipboard.writeText(url);
                         setSuccess("Public link copied to clipboard!");
                         setShowDeliveryModal(null);
-                        setTimeout(() => setSuccess(null), 3000);
+                        setTimeout(() => setSuccess(""), 3000);
                       }}
                       className="w-full bg-white text-black hover:bg-gray-100 border-[3px] border-black p-4 font-black uppercase text-sm shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2"
                     >

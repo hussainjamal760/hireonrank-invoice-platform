@@ -17,6 +17,7 @@ export default function Login() {
   const [otpSending, setOtpSending] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [multiCompanyData, setMultiCompanyData] = useState<any[] | null>(null);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -115,6 +116,12 @@ export default function Login() {
 
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
+
+      if (data.state === "MULTIPLE_COMPANIES_STATE") {
+        setMultiCompanyData(data.companies);
+        return;
+      }
+
       if (inviteToken) {
         router.push(`/employee-details?invite_token=${inviteToken}`);
       } else if (data.state === "NO_COMPANY_STATE") {
@@ -124,6 +131,34 @@ export default function Login() {
       }
     } catch (err: any) {
       setError(err.message || "Failed to log in with Google");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompanySelect = async (companyId: string) => {
+    setLoading(true);
+    setError("");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/companies/select", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ companyId })
+      });
+      const data = await handleApiResponse(res);
+      localStorage.setItem("token", data.token);
+
+      if (inviteToken) {
+        router.push(`/employee-details?invite_token=${inviteToken}`);
+      } else {
+        router.push("/accountant-dashboard");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to select company");
     } finally {
       setLoading(false);
     }
@@ -173,6 +208,12 @@ export default function Login() {
       const data = await handleApiResponse(res);
       // Save token and navigate
       localStorage.setItem("token", data.token);
+
+      if (data.state === "MULTIPLE_COMPANIES_STATE") {
+        setMultiCompanyData(data.companies);
+        return;
+      }
+
       if (data.state === "ADMIN_BYPASS") {
         router.push("/admin-dashboard");
       } else if (inviteToken) {
@@ -229,6 +270,40 @@ export default function Login() {
 
 
 
+          {multiCompanyData ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col gap-6"
+            >
+              <h2 className="font-headline-md text-2xl font-black uppercase text-on-background border-b-[3px] border-on-background pb-2">Select Your Company</h2>
+              <div className="flex flex-col gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {multiCompanyData.map((company: any) => (
+                  <button
+                    key={company.id}
+                    onClick={() => handleCompanySelect(company.id)}
+                    disabled={loading}
+                    className="flex items-center gap-4 p-4 border-[3px] border-on-background bg-surface-container-low hover:bg-[#FACC15] transition-all hover:-translate-y-1 hover:translate-x-1 shadow-[4px_4px_0_0_#000000] text-left"
+                  >
+                    {company.logo ? (
+                      <img src={company.logo} alt={company.name} className="w-12 h-12 object-cover border-[3px] border-on-background shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 bg-black text-[#FACC15] flex items-center justify-center font-black text-xl border-[3px] border-on-background shrink-0">
+                        {company.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="flex flex-col items-start overflow-hidden">
+                      <span className="font-black text-lg text-on-background uppercase truncate w-full">{company.name}</span>
+                      <span className="text-xs font-label-caps font-bold uppercase text-on-surface-variant flex items-center gap-1">
+                        <CheckCircle2 size={12} /> Role: {company.role}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          ) : (
           <motion.form 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -279,6 +354,7 @@ export default function Login() {
               {loading ? "Entering..." : "Enter Terminal"} <ArrowRight size={24} />
             </button>
           </motion.form>
+          )}
 
           {/* Social Sign-in section */}
           <div className="mt-2 flex flex-col items-center gap-4">
