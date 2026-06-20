@@ -55,6 +55,8 @@ export default function Login() {
           const decoded = JSON.parse(atob(payload));
           if (decoded.role === 'EMPLOYEE') {
             router.push('/employee-dashboard');
+          } else if (decoded.role === 'ADMIN') {
+            router.push('/admin-dashboard');
           } else {
             router.push('/accountant-dashboard');
           }
@@ -142,6 +144,8 @@ export default function Login() {
       } else {
         if (data.role === 'EMPLOYEE') {
           router.push("/employee-dashboard");
+        } else if (data.role === 'ADMIN') {
+          router.push("/admin-dashboard");
         } else {
           router.push("/accountant-dashboard");
         }
@@ -174,6 +178,8 @@ export default function Login() {
       } else {
         if (data.role === 'EMPLOYEE') {
           router.push("/employee-dashboard");
+        } else if (data.role === 'ADMIN') {
+          router.push("/admin-dashboard");
         } else {
           router.push("/accountant-dashboard");
         }
@@ -244,6 +250,8 @@ export default function Login() {
       } else {
         if (data.role === 'EMPLOYEE') {
           router.push("/employee-dashboard");
+        } else if (data.role === 'ADMIN') {
+          router.push("/admin-dashboard");
         } else {
           router.push("/accountant-dashboard");
         }

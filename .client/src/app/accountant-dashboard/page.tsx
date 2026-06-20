@@ -97,9 +97,9 @@ export default function AccountantDashboard() {
 
       setStats(statsData);
       setLogs(Array.isArray(activityData) ? activityData : []);
-      setRevenueChart(revenueChartData);
-      setInvoiceChart(invoiceChartData);
-      setInvoices(invoicesData);
+      setRevenueChart(Array.isArray(revenueChartData) ? revenueChartData : []);
+      setInvoiceChart(Array.isArray(invoiceChartData) ? invoiceChartData : []);
+      setInvoices(Array.isArray(invoicesData) ? invoicesData : []);
     } catch (err: any) {
       console.error(err);
       setError("Failed to fetch command center statistics.");

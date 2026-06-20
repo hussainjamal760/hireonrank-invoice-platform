@@ -60,7 +60,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push("/admin-dashboard/salary-slips");
         return;
       }
-    } else {
+    } else if (decoded && decoded.role !== 'ADMIN') {
       router.push("/accountant-dashboard");
       return;
     }
