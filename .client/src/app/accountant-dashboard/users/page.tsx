@@ -7,6 +7,7 @@ import {
   CheckCircle2, ShieldAlert, Key, Clipboard, UploadCloud, FileSpreadsheet, XCircle
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface Member {
   id: string;
@@ -43,6 +44,21 @@ export default function UsersPage() {
 
   // UI state
   const [activeTab, setActiveTab] = useState<"members" | "invites" | "batch">("members");
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    targetId: string;
+    targetName?: string;
+    type: 'cancelInvite' | 'removeMember' | null;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    targetId: "",
+    type: null
+  });
 
   // Batch Invite State
   const [parsedEmails, setParsedEmails] = useState<{ email: string; valid: boolean; reason?: string }[]>([]);
@@ -218,8 +234,17 @@ export default function UsersPage() {
     }
   };
 
-  const handleCancelInvite = async (inviteId: string) => {
-    if (!confirm("Are you sure you want to cancel this invitation?")) return;
+  const requestCancelInvite = (inviteId: string) => {
+    setModalState({
+      isOpen: true,
+      title: "Cancel Invitation",
+      message: "Are you sure you want to cancel this invitation?",
+      targetId: inviteId,
+      type: 'cancelInvite'
+    });
+  };
+
+  const executeCancelInvite = async (inviteId: string) => {
     setError("");
     setSuccess("");
 
@@ -240,8 +265,18 @@ export default function UsersPage() {
     }
   };
 
-  const handleRemoveMember = async (memberId: string, memberName: string) => {
-    if (!confirm(`Are you sure you want to remove ${memberName} from this company?`)) return;
+  const requestRemoveMember = (memberId: string, memberName: string) => {
+    setModalState({
+      isOpen: true,
+      title: "Remove Member",
+      message: `Are you sure you want to remove ${memberName} from this company?`,
+      targetId: memberId,
+      targetName: memberName,
+      type: 'removeMember'
+    });
+  };
+
+  const executeRemoveMember = async (memberId: string, memberName: string) => {
     setError("");
     setSuccess("");
 
@@ -259,6 +294,16 @@ export default function UsersPage() {
       fetchData();
     } catch (err: any) {
       setError(err.message || "Failed to remove member");
+    }
+  };
+
+  const handleModalConfirm = () => {
+    const { type, targetId, targetName } = modalState;
+    setModalState(prev => ({ ...prev, isOpen: false }));
+    if (type === 'cancelInvite') {
+      executeCancelInvite(targetId);
+    } else if (type === 'removeMember') {
+      executeRemoveMember(targetId, targetName || 'User');
     }
   };
 
@@ -472,7 +517,7 @@ export default function UsersPage() {
                           </td>
                           <td className="p-4 text-center">
                             <button
-                              onClick={() => handleRemoveMember(member.id, member.user?.name || "User")}
+                              onClick={() => requestRemoveMember(member.id, member.user?.name || "User")}
                               className="text-red-600 hover:text-red-500 hover:scale-110 transition-transform bg-transparent border-0 cursor-pointer"
                               title="Remove Member"
                             >
@@ -522,7 +567,7 @@ export default function UsersPage() {
                               <Copy size={18} />
                             </button>
                             <button
-                              onClick={() => handleCancelInvite(inv.id)}
+                              onClick={() => requestCancelInvite(inv.id)}
                               className="text-red-600 hover:text-red-500 hover:scale-110 transition-transform bg-transparent border-0 cursor-pointer"
                               title="Cancel Invitation"
                             >
@@ -605,6 +650,16 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal 
+        isOpen={modalState.isOpen}
+        title={modalState.title}
+        message={modalState.message}
+        onConfirm={handleModalConfirm}
+        onCancel={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+        isDestructive={true}
+        confirmText="Yes, Proceed"
+      />
     </div>
   );
 }

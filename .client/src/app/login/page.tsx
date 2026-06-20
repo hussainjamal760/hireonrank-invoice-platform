@@ -130,6 +130,13 @@ export default function Login() {
       });
 
       const data = await handleApiResponse(res);
+
+      if (data.state === "BANNED_STATE") {
+        localStorage.removeItem("token");
+        setError(data.message);
+        return;
+      }
+
       localStorage.setItem("token", data.token);
 
       if (data.state === "MULTIPLE_COMPANIES_STATE") {
@@ -233,6 +240,13 @@ export default function Login() {
       });
 
       const data = await handleApiResponse(res);
+
+      if (data.state === "BANNED_STATE") {
+        localStorage.removeItem("token");
+        setError(data.message);
+        return;
+      }
+
       // Save token and navigate
       localStorage.setItem("token", data.token);
 

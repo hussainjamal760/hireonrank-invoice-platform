@@ -12,10 +12,11 @@ import {
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/admin-dashboard", icon: Home },
+  { name: "Companies", href: "/admin-dashboard/companies", icon: Building2 },
   { name: "Employees", href: "/admin-dashboard/employees", icon: Users },
   { name: "Payroll", href: "/admin-dashboard/payroll", icon: Banknote },
   { name: "Invoices", href: "/admin-dashboard/invoices", icon: FileText },
-  { name: "Team Invite", href: "/admin-dashboard/users", icon: Building2 },
+  { name: "Team Invite", href: "/admin-dashboard/users", icon: Users },
   { name: "Settings", href: "/admin-dashboard/settings", icon: Settings },
 ];
 

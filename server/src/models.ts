@@ -56,6 +56,7 @@ export interface ICompany extends Document {
   companyType?: string;
   employeesCount?: string;
   departments?: string[];
+  status: 'ACTIVE' | 'BANNED';
   createdAt: Date;
 }
 
@@ -72,6 +73,7 @@ const CompanySchema: Schema = new Schema({
   companyType: { type: String },
   employeesCount: { type: String },
   departments: { type: [String], default: [] },
+  status: { type: String, enum: ['ACTIVE', 'BANNED'], default: 'ACTIVE', required: true },
   createdAt: { type: Date, default: Date.now }
 });
 

@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Company, User, Invoice, PayrollInvoice, ActivityLog } from '../models';
+import { Company, User, Invoice, PayrollInvoice, ActivityLog, Employee, Client } from '../models';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -180,6 +180,70 @@ router.get('/activity', authenticateToken, async (req: AuthRequest, res: Respons
     });
 
     return res.status(200).json(formattedActivities);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /admin/companies
+ * Returns a list of all companies with their employee and client counts.
+ */
+router.get('/companies', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const companies = await Company.find().populate('ownerId', 'name email').lean();
+
+    const companiesWithStats = await Promise.all(companies.map(async (c) => {
+      const employeeCount = await Employee.countDocuments({ companyId: c._id });
+      const clientCount = await Client.countDocuments({ companyId: c._id });
+
+      return {
+        ...c,
+        ownerName: (c.ownerId as any)?.name || 'Unknown',
+        ownerEmail: (c.ownerId as any)?.email || 'Unknown',
+        employeeCount,
+        clientCount
+      };
+    }));
+
+    return res.status(200).json(companiesWithStats);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /admin/companies/:id/toggle-status
+ * Toggles a company between ACTIVE and BANNED
+ */
+router.post('/companies/:id/toggle-status', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const companyId = req.params.id;
+    const company = await Company.findById(companyId);
+
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    company.status = company.status === 'BANNED' ? 'ACTIVE' : 'BANNED';
+    await company.save();
+
+    await ActivityLog.create({
+      companyId: company._id,
+      userId: req.user.userId,
+      action: 'COMPANY_UPDATED',
+      description: `Company ${company.name} was ${company.status.toLowerCase()} by Admin`,
+    });
+
+    return res.status(200).json({ message: 'Company status updated', status: company.status });
   } catch (err) {
     next(err);
   }
