@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Invoice, ActivityLog } from '../models';
+import { Invoice, ActivityLog, Company } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
+import { generateCustomInvoicePDF } from '../utils/pdfGenerator';
 
 const router = Router();
 
@@ -84,7 +85,18 @@ router.post(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const { clientName, clientEmail, clientAddress, items, taxRate, dueDate, notes } = req.body;
+      const { 
+        clientName, 
+        clientEmail, 
+        clientAddress, 
+        items, 
+        taxRate, 
+        dueDate, 
+        notes,
+        logoUrl,
+        customFields,
+        employeeIds
+      } = req.body;
 
       // --- Validation ---
       if (!clientName || typeof clientName !== 'string') {
@@ -130,6 +142,9 @@ router.post(
         status: 'DRAFT',
         dueDate: new Date(dueDate),
         notes: notes || undefined,
+        logoUrl: logoUrl || undefined,
+        customFields: customFields || [],
+        employeeIds: employeeIds || [],
         createdBy: req.user.userId
       });
 
@@ -411,6 +426,38 @@ router.delete(
       await invoice.deleteOne();
 
       return res.status(200).json({ success: true, message: 'Invoice deleted successfully' });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * GET /invoices/:id/download
+ * Generates and downloads the PDF for a custom invoice.
+ */
+router.get(
+  '/:id/download',
+  authenticateToken,
+  requireCompany,
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      const { id } = req.params;
+      const companyId = req.user!.currentCompanyId;
+
+      const [invoice, company] = await Promise.all([
+        Invoice.findOne({ _id: id, companyId }),
+        Company.findById(companyId)
+      ]);
+
+      if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+      if (!company) return res.status(404).json({ message: 'Company not found' });
+
+      const pdfBuffer = await generateCustomInvoicePDF(invoice, company);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=Invoice-${invoice.invoiceNumber}.pdf`);
+      return res.send(Buffer.from(pdfBuffer));
     } catch (err) {
       next(err);
     }

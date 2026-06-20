@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { 
   FileText, Calendar, ShieldAlert, CheckCircle2,
-  ListFilter, Play, ArrowUpRight, DollarSign, Check
+  ListFilter, Play, ArrowUpRight, DollarSign, Check,
+  Plus, Download
 } from "lucide-react";
 
 interface Invoice {
@@ -55,12 +57,37 @@ export default function InvoicesTab() {
     if (!token || !companyId) return;
 
     try {
-      const res = await fetch(`/api/invoice/${companyId}`, {
+      // Fetch Payroll Invoices
+      const resPayroll = await fetch(`/api/invoice/${companyId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to fetch invoices");
-      setInvoices(data.invoices || []);
+      const dataPayroll = await resPayroll.json();
+      
+      // Fetch General Custom Invoices
+      const resCustom = await fetch(`/api/invoices`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const dataCustom = await resCustom.json();
+
+      const payrollInvoices = (dataPayroll.invoices || []).map((inv: any) => ({
+        ...inv,
+        type: 'PAYROLL',
+        displayClient: inv.employeeId?.name || "System Payroll",
+        displayAmount: inv.amount,
+        displayDate: inv.month
+      }));
+
+      const customInvoices = (dataCustom.invoices || []).map((inv: any) => ({
+        ...inv,
+        type: 'CUSTOM',
+        displayClient: inv.clientName,
+        displayAmount: inv.totalAmount,
+        displayDate: new Date(inv.dueDate).toLocaleDateString()
+      }));
+
+      setInvoices([...payrollInvoices, ...customInvoices].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ));
     } catch (err: any) {
       setError(err.message || "Failed to load invoices.");
     } finally {
@@ -139,7 +166,35 @@ export default function InvoicesTab() {
 
   const filteredInvoices = filterMonth === "ALL"
     ? invoices
-    : invoices.filter(i => i.month === filterMonth);
+    : invoices.filter((i: any) => i.month === filterMonth || i.displayDate.includes(filterMonth));
+
+  const handleDownload = async (invoice: any) => {
+    const isPayroll = invoice.type === 'PAYROLL';
+    const endpoint = isPayroll 
+      ? `/api/payroll/${invoice._id}/download` 
+      : `/api/invoices/${invoice._id}/download`;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Download failed");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${invoice.invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      setError(err.message || "Failed to download PDF");
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12">
@@ -153,6 +208,12 @@ export default function InvoicesTab() {
           <h1 className="font-display-lg text-5xl md:text-6xl text-black uppercase font-black tracking-tighter">Invoices Tab</h1>
           <p className="font-body-md text-on-surface-variant font-bold mt-2">Generate and audit employee payroll invoice status records.</p>
         </div>
+        <Link 
+          href="/accountant-dashboard/invoices/custom"
+          className="bg-[#FACC15] text-black border-[3px] border-black px-6 py-4 font-black uppercase text-sm flex items-center gap-2 shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
+        >
+          <Plus size={20} /> Create Custom Invoice
+        </Link>
       </motion.div>
 
       {/* Notifications */}
@@ -257,16 +318,19 @@ export default function InvoicesTab() {
               <thead>
                 <tr className="bg-[#FACC15] border-b-[3px] border-black font-label-caps text-xs uppercase font-black text-black">
                   <th className="p-4 border-r-[2px] border-black">Invoice #</th>
-                  <th className="p-4 border-r-[2px] border-black">Employee</th>
-                  <th className="p-4 border-r-[2px] border-black">Month</th>
+                  <th className="p-4 border-r-[2px] border-black">Type</th>
+                  <th className="p-4 border-r-[2px] border-black">Client / Employee</th>
+                  <th className="p-4 border-r-[2px] border-black">Period / Due</th>
                   <th className="p-4 border-r-[2px] border-black">Amount</th>
                   <th className="p-4 border-r-[2px] border-black">Status</th>
                   <th className="p-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y-[1px] divide-black font-mono text-sm">
-                {filteredInvoices.map((inv) => {
-                  const isPaid = inv.status === 'paid';
+                {filteredInvoices.map((inv: any) => {
+                  const isPaid = inv.status.toLowerCase() === 'paid';
+                  const isPayroll = inv.type === 'PAYROLL';
+                  
                   return (
                     <tr key={inv._id} className="hover:bg-[#FACC15]/10 text-black">
                       <td className="p-4 border-r-[2px] border-black font-bold text-xs">
@@ -274,15 +338,22 @@ export default function InvoicesTab() {
                           {inv.invoiceNumber}
                         </span>
                       </td>
+                      <td className="p-4 border-r-[2px] border-black font-bold text-[10px]">
+                        <span className={`px-2 py-0.5 border-[1px] border-black ${isPayroll ? 'bg-blue-100' : 'bg-purple-100'}`}>
+                          {inv.type}
+                        </span>
+                      </td>
                       <td className="p-4 border-r-[2px] border-black font-bold">
                         <div className="flex flex-col">
-                          <span>{inv.employeeId?.name || "Deleted Employee"}</span>
-                          <span className="text-[10px] text-black/50 font-bold">{inv.employeeId?.email || ""}</span>
+                          <span>{inv.displayClient}</span>
+                          {isPayroll && (
+                             <span className="text-[10px] text-black/50 font-bold">{inv.employeeId?.email || ""}</span>
+                          )}
                         </div>
                       </td>
-                      <td className="p-4 border-r-[2px] border-black font-bold text-xs">{inv.month}</td>
+                      <td className="p-4 border-r-[2px] border-black font-bold text-xs">{inv.displayDate}</td>
                       <td className="p-4 border-r-[2px] border-black bg-[#FACC15]/10 font-bold text-black text-base">
-                        ${inv.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        ${inv.displayAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
                       <td className="p-4 border-r-[2px] border-black font-bold">
                         <span className={`border-[2px] border-black px-2 py-0.5 text-xs font-black uppercase shadow-[1px_1px_0_0_#000000] ${
@@ -292,18 +363,32 @@ export default function InvoicesTab() {
                         </span>
                       </td>
                       <td className="p-4 text-center">
-                        {!isPaid ? (
-                          <button
-                            onClick={() => handleMarkAsPaid(inv._id)}
-                            className="bg-black text-white hover:bg-emerald-400 hover:text-black border-[2px] border-black px-3 py-1.5 font-label-caps text-xs uppercase font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center gap-1 mx-auto"
-                          >
-                            <Check size={14} /> Mark as Paid
-                          </button>
-                        ) : (
-                          <span className="text-emerald-600 font-bold text-xs uppercase flex items-center justify-center gap-1">
-                            <CheckCircle2 size={16} /> Settled
-                          </span>
-                        )}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleDownload(inv)}
+                              className="bg-white text-black hover:bg-[#FACC15] border-[2px] border-black p-1.5 shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                              title="Download PDF"
+                            >
+                              <Download size={14} />
+                            </button>
+
+                            {!isPaid && isPayroll ? (
+                              <button
+                                onClick={() => handleMarkAsPaid(inv._id)}
+                                className="bg-black text-white hover:bg-emerald-400 hover:text-black border-[2px] border-black px-3 py-1.5 font-label-caps text-xs uppercase font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center gap-1"
+                              >
+                                <Check size={14} /> Mark as Paid
+                              </button>
+                            ) : !isPaid && !isPayroll ? (
+                              <span className="text-[10px] font-bold text-black/40 italic">Manual Update</span>
+                            ) : (
+                              <div className="flex items-center justify-center gap-1 text-emerald-600 font-bold">
+                                <Check size={14} /> <span className="text-[10px]">SETTLED</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   );

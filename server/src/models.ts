@@ -6,6 +6,9 @@ export interface IUser extends Document {
   password?: string;
   googleId?: string;
   profilePicture?: string;
+  age?: number;
+  occupation?: string;
+  phoneNumber?: string;
   createdAt: Date;
 }
 
@@ -15,6 +18,9 @@ const UserSchema: Schema = new Schema({
   password: { type: String },
   googleId: { type: String },
   profilePicture: { type: String },
+  age: { type: Number },
+  occupation: { type: String },
+  phoneNumber: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -309,103 +315,3 @@ const ActivityLogSchema: Schema = new Schema({
 ActivityLogSchema.index({ companyId: 1, createdAt: -1 });
 
 export const ActivityLog = mongoose.model<IActivityLog>('ActivityLog', ActivityLogSchema);
-
-// --- Company-Based Accountant SaaS Extensions ---
-
-export interface IAllowance {
-  name: string;
-  amount: number;
-}
-
-export interface ITaxRule {
-  name: string;
-  rate: number; // percentage
-}
-
-export interface IEmployeeProfile extends Document {
-  employeeId: mongoose.Types.ObjectId;
-  userId?: mongoose.Types.ObjectId;
-  companyId: mongoose.Types.ObjectId;
-  baseSalary: number;
-  currency: string;
-  allowances: IAllowance[];
-  taxRules: ITaxRule[];
-  createdAt: Date;
-}
-
-const AllowanceSchema = new Schema({
-  name: { type: String, required: true },
-  amount: { type: Number, required: true, default: 0 }
-}, { _id: false });
-
-const TaxRuleSchema = new Schema({
-  name: { type: String, required: true },
-  rate: { type: Number, required: true, default: 0 } // e.g. 10 for 10%
-}, { _id: false });
-
-const EmployeeProfileSchema: Schema = new Schema({
-  employeeId: { type: Schema.Types.ObjectId, ref: 'Employee', required: true, unique: true },
-  userId: { type: Schema.Types.ObjectId, ref: 'User' },
-  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
-  baseSalary: { type: Number, required: true, default: 0 },
-  currency: { type: String, required: true, default: 'USD' },
-  allowances: { type: [AllowanceSchema], default: [] },
-  taxRules: { type: [TaxRuleSchema], default: [] },
-  createdAt: { type: Date, default: Date.now }
-});
-
-export const EmployeeProfile = mongoose.model<IEmployeeProfile>('EmployeeProfile', EmployeeProfileSchema);
-
-export interface IPayroll extends Document {
-  companyId: mongoose.Types.ObjectId;
-  employeeId: mongoose.Types.ObjectId;
-  month: string; // e.g. "2026-06"
-  baseSalary: number;
-  totalAllowances: number;
-  totalTax: number;
-  netSalary: number;
-  generatedBy: mongoose.Types.ObjectId;
-  createdAt: Date;
-}
-
-const PayrollSchema: Schema = new Schema({
-  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
-  employeeId: { type: Schema.Types.ObjectId, ref: 'Employee', required: true, index: true },
-  month: { type: String, required: true },
-  baseSalary: { type: Number, required: true, default: 0 },
-  totalAllowances: { type: Number, required: true, default: 0 },
-  totalTax: { type: Number, required: true, default: 0 },
-  netSalary: { type: Number, required: true, default: 0 },
-  generatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  createdAt: { type: Date, default: Date.now }
-});
-
-PayrollSchema.index({ companyId: 1, employeeId: 1, month: 1 }, { unique: true });
-
-export const Payroll = mongoose.model<IPayroll>('Payroll', PayrollSchema);
-
-export interface IPayrollInvoice extends Document {
-  companyId: mongoose.Types.ObjectId;
-  employeeId: mongoose.Types.ObjectId;
-  invoiceNumber: string;
-  month: string;
-  amount: number;
-  status: 'generated' | 'paid' | 'pending';
-  createdAt: Date;
-}
-
-const PayrollInvoiceSchema: Schema = new Schema({
-  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
-  employeeId: { type: Schema.Types.ObjectId, ref: 'Employee', required: true, index: true },
-  invoiceNumber: { type: String, required: true },
-  month: { type: String, required: true },
-  amount: { type: Number, required: true, default: 0 },
-  status: { type: String, enum: ['generated', 'paid', 'pending'], default: 'generated', required: true },
-  createdAt: { type: Date, default: Date.now }
-});
-
-PayrollInvoiceSchema.index({ companyId: 1, invoiceNumber: 1 }, { unique: true });
-PayrollInvoiceSchema.index({ companyId: 1, employeeId: 1, month: 1 }, { unique: true });
-
-export const PayrollInvoice = mongoose.model<IPayrollInvoice>('PayrollInvoice', PayrollInvoiceSchema);
-

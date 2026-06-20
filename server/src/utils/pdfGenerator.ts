@@ -89,3 +89,112 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
 
   return doc.output('arraybuffer');
 };
+
+export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
+  const doc = new jsPDF() as jsPDFWithPlugin;
+
+  // Header / Branding
+  doc.setFillColor(0, 0, 0); // Black header for custom invoices
+  doc.rect(0, 0, 210, 50, 'F');
+  
+  doc.setTextColor(250, 204, 21); // #FACC15
+  doc.setFontSize(28);
+  doc.setFont('helvetica', 'bold');
+  doc.text('INVOICE', 15, 30);
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(10);
+  doc.text(invoice.invoiceNumber, 15, 40);
+
+  // Company Details (From)
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(12);
+  doc.text(company.name.toUpperCase(), 195, 25, { align: 'right' });
+  doc.setFontSize(8);
+  doc.text(company.address || '', 195, 32, { align: 'right' });
+  doc.text(company.country || '', 195, 37, { align: 'right' });
+
+  // Client Details (To)
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('BILL TO:', 15, 65);
+  doc.setFont('helvetica', 'normal');
+  doc.text(invoice.clientName.toUpperCase(), 15, 72);
+  doc.text(invoice.clientEmail || '', 15, 78);
+  doc.text(invoice.clientAddress || '', 15, 84);
+
+  // Invoice Meta
+  doc.setFont('helvetica', 'bold');
+  doc.text('DATE:', 140, 72);
+  doc.text('DUE DATE:', 140, 78);
+  doc.setFont('helvetica', 'normal');
+  doc.text(new Date(invoice.createdAt).toLocaleDateString(), 170, 72);
+  doc.text(new Date(invoice.dueDate).toLocaleDateString(), 170, 78);
+
+  // Custom Fields
+  let customFieldsStartY = 95;
+  if (invoice.customFields && invoice.customFields.length > 0) {
+    invoice.customFields.forEach((field: any) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${field.label.toUpperCase()}:`, 15, customFieldsStartY);
+      doc.setFont('helvetica', 'normal');
+      doc.text(field.value, 45, customFieldsStartY);
+      customFieldsStartY += 6;
+    });
+  }
+
+  // Items Table
+  const body = invoice.items.map((item: any) => [
+    item.description,
+    item.quantity.toString(),
+    `$${item.unitPrice.toLocaleString()}`,
+    `$${item.amount.toLocaleString()}`
+  ]);
+
+  doc.autoTable({
+    startY: Math.max(110, customFieldsStartY + 5),
+    head: [['Description', 'Qty', 'Unit Price', 'Total']],
+    body: body,
+    theme: 'grid',
+    headStyles: { fillColor: [0, 0, 0], textColor: [250, 204, 21] },
+    columnStyles: {
+      1: { halign: 'center' },
+      2: { halign: 'right' },
+      3: { halign: 'right' }
+    }
+  });
+
+  // Totals
+  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  doc.setFont('helvetica', 'bold');
+  doc.text('SUBTOTAL:', 140, finalY);
+  doc.text(`TAX (${invoice.taxRate}%):`, 140, finalY + 7);
+  doc.setFontSize(14);
+  doc.text('TOTAL AMOUNT:', 140, finalY + 18);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(`$${invoice.subtotal.toLocaleString()}`, 195, finalY, { align: 'right' });
+  doc.text(`$${invoice.taxAmount.toLocaleString()}`, 195, finalY + 7, { align: 'right' });
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text(`$${invoice.totalAmount.toLocaleString()}`, 195, finalY + 18, { align: 'right' });
+
+  // Notes
+  if (invoice.notes) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('NOTES:', 15, finalY + 30);
+    doc.setFont('helvetica', 'normal');
+    doc.text(invoice.notes, 15, finalY + 35, { maxWidth: 100 });
+  }
+
+  // Footer
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Thank you for your business.', 105, 285, { align: 'center' });
+
+  return doc.output('arraybuffer');
+};
