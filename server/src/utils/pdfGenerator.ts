@@ -1,14 +1,8 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
-import { UserOptions } from 'jspdf-autotable';
-
-// Fix for jspdf-autotable typing
-interface jsPDFWithPlugin extends jsPDF {
-  autoTable: (options: UserOptions) => jsPDF;
-}
+import autoTable from 'jspdf-autotable';
 
 export const generateSalarySlipPDF = async (record: any, company: any) => {
-  const doc = new jsPDF() as jsPDFWithPlugin;
+  const doc = new jsPDF();
 
   // Header
   doc.setFillColor(250, 204, 21); // #FACC15
@@ -51,7 +45,7 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
     ['TOTAL NET PAY', `Rs ${record.netPay.toLocaleString()}`]
   ];
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 75,
     head: [['Description', 'Amount']],
     body: [
@@ -91,7 +85,7 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
 };
 
 export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
-  const doc = new jsPDF() as jsPDFWithPlugin;
+  const doc = new jsPDF();
 
   // Header / Branding
   doc.setFillColor(0, 0, 0); // Black header for custom invoices
@@ -152,7 +146,7 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
     `$${item.amount.toLocaleString()}`
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: Math.max(110, customFieldsStartY + 5),
     head: [['Description', 'Qty', 'Unit Price', 'Total']],
     body: body,

@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Employee, PayrollRecord, ActivityLog, Payroll, Company } from '../models';
+import { Employee, PayrollRecord, ActivityLog, Payroll, Company, PayrollInvoice } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
 import { AccountingService } from '../services/accountingService';
 import { generateSalarySlipPDF } from '../utils/pdfGenerator';
@@ -17,15 +17,50 @@ router.get(
   async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
     try {
       const companyId = req.user!.currentCompanyId as string;
-      const record = await PayrollRecord.findOne({ _id: req.params.id, companyId });
+      const { id } = req.params;
+
+      let recordType: 'new' | 'old' | null = null;
+      let record: any = null;
+
+      // 1. Try if ID belongs to a PayrollInvoice
+      const pInv = await PayrollInvoice.findOne({ _id: id, companyId });
+      if (pInv) {
+        record = await Payroll.findOne({ companyId, employeeId: pInv.employeeId, month: pInv.month }).populate('employeeId');
+        if (record) {
+          recordType = 'new';
+        } else {
+          record = await PayrollRecord.findOne({ companyId, employeeId: pInv.employeeId, period: pInv.month });
+          if (record) recordType = 'old';
+        }
+      } else {
+        // 2. Fallback to direct ID match
+        record = await Payroll.findOne({ _id: id, companyId }).populate('employeeId');
+        if (record) {
+          recordType = 'new';
+        } else {
+          record = await PayrollRecord.findOne({ _id: id, companyId });
+          if (record) recordType = 'old';
+        }
+      }
 
       if (!record) {
         return res.status(404).json({ message: 'Payroll record not found' });
       }
 
-      // Security: Employees can only download their own slips
-      if (req.user!.role === 'EMPLOYEE' && record.employeeEmail !== req.user!.email) {
-        return res.status(403).json({ message: 'Forbidden' });
+      // Security
+      if (req.user!.role === 'EMPLOYEE') {
+        const employee = await Employee.findOne({ companyId, email: req.user!.email });
+        if (!employee) return res.status(403).json({ message: 'Forbidden' });
+        
+        if (recordType === 'new') {
+          if (record.employeeId._id.toString() !== employee._id.toString()) {
+            return res.status(403).json({ message: 'Forbidden' });
+          }
+        } else {
+          if (record.employeeEmail !== req.user!.email) {
+            return res.status(403).json({ message: 'Forbidden' });
+          }
+        }
       }
 
       const company = await Company.findById(companyId);
@@ -33,10 +68,28 @@ router.get(
         return res.status(404).json({ message: 'Company not found' });
       }
 
-      const pdfBuffer = await generateSalarySlipPDF(record, company);
+      const pdfData = recordType === 'new' ? {
+        period: record.month,
+        employeeName: record.employeeId.name,
+        employeeEmail: record.employeeId.email,
+        baseSalary: record.baseSalary,
+        bonuses: record.totalAllowances,
+        deductions: record.totalTax,
+        netPay: record.netSalary
+      } : {
+        period: record.period,
+        employeeName: record.employeeName,
+        employeeEmail: record.employeeEmail,
+        baseSalary: record.baseSalary,
+        bonuses: record.bonuses,
+        deductions: record.deductions,
+        netPay: record.netPay
+      };
+
+      const pdfBuffer = await generateSalarySlipPDF(pdfData, company);
 
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=SalarySlip_${record.period.replace(/\s+/g, '_')}.pdf`);
+      res.setHeader('Content-Disposition', `attachment; filename=SalarySlip_${pdfData.period.replace(/\s+/g, '_')}.pdf`);
       return res.send(Buffer.from(pdfBuffer));
     } catch (err) {
       next(err);
@@ -310,7 +363,7 @@ router.post(
       }
 
       const payroll = await AccountingService.calculatePayroll(
-        req.params.employeeId,
+        req.params.employeeId as string,
         month,
         req.user!.userId
       );
