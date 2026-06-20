@@ -172,7 +172,7 @@ export default function SetupCompany() {
       setSuccessMsg("Company setup successful!");
       
       setTimeout(() => {
-        router.push("/admin-dashboard");
+        router.push("/accountant-dashboard");
       }, 1000);
       
     } catch (err: any) {

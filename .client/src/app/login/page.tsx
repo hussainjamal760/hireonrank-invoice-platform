@@ -47,7 +47,7 @@ export default function Login() {
   // Google OAuth Initialization (Safe Single-Init Guard)
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('token')) {
-      router.push('/admin-dashboard');
+      router.push('/accountant-dashboard');
       return;
     }
 
@@ -122,7 +122,7 @@ export default function Login() {
           router.push("/create-company");
         }
       } else {
-        router.push("/admin-dashboard");
+        router.push("/accountant-dashboard");
       }
     } catch (err: any) {
       setError(err.message || "Failed to log in with Google");
@@ -182,7 +182,7 @@ export default function Login() {
           router.push("/create-company");
         }
       } else {
-        router.push("/admin-dashboard");
+        router.push("/accountant-dashboard");
       }
     } catch (err: any) {
       setError(err.message || "OTP verification failed");

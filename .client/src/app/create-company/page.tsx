@@ -65,7 +65,7 @@ export default function CreateCompany() {
         })
         .then((data) => {
           localStorage.setItem("token", data.token);
-          router.push("/admin-dashboard");
+          router.push("/accountant-dashboard");
         })
         .catch((err: any) => {
           setError(err.message || "Failed to accept invitation");

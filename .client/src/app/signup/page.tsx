@@ -49,7 +49,7 @@ export default function Signup() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('token')) {
-      router.push('/admin-dashboard');
+      router.push('/accountant-dashboard');
       return;
     }
 
