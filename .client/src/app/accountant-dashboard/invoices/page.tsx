@@ -162,7 +162,7 @@ export default function InvoicesTab() {
     }
   };
 
-  const uniqueMonths = Array.from(new Set(invoices.map((i) => i.month))).sort().reverse();
+  const uniqueMonths = Array.from(new Set(invoices.map((i) => i.month).filter(Boolean))).sort().reverse();
 
   const filteredInvoices = filterMonth === "ALL"
     ? invoices
