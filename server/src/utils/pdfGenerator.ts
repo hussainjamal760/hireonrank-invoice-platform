@@ -186,7 +186,16 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   });
 
   // Totals Summary Box
-  const finalY = ((doc as any).lastAutoTable?.finalY || 130) + 12;
+  let finalY = ((doc as any).lastAutoTable?.finalY || 130) + 12;
+
+  // Prevent overlap with footer: if not enough space remains, add a new page
+  if (finalY + 35 > 270) {
+    doc.addPage();
+    // Draw top accent bar on new page for aesthetic consistency
+    doc.setFillColor(250, 204, 21); // #FACC15
+    doc.rect(0, 0, 210, 6, 'F');
+    finalY = 25;
+  }
   
   doc.setFillColor(248, 250, 252); // slate-50
   doc.rect(130, finalY - 5, 65, 34, 'F');
