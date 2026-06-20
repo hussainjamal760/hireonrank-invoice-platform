@@ -414,3 +414,133 @@ PayrollInvoiceSchema.index({ companyId: 1, invoiceNumber: 1 }, { unique: true })
 PayrollInvoiceSchema.index({ companyId: 1, employeeId: 1, month: 1 }, { unique: true });
 
 export const PayrollInvoice = mongoose.model<IPayrollInvoice>('PayrollInvoice', PayrollInvoiceSchema);
+
+export interface ITemplateSection {
+  id: string;
+  type: string;
+  visible: boolean;
+  order: number;
+  column?: string;
+}
+
+export interface ITemplateBranding {
+  logoUrl?: string;
+  companyName?: string;
+  companyAddress?: string;
+  website?: string;
+  phone?: string;
+  defaultNotes?: string;
+  defaultTerms?: string;
+}
+
+export interface ITemplateThemeSettings {
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+}
+
+export interface ITemplateTypography {
+  fontFamily: string;
+  headingSize: number;
+  bodySize: number;
+  fontWeight: string;
+}
+
+export interface ITemplateLayout {
+  headerStyle: string;
+  footerStyle: string;
+  sectionSpacing: number;
+  borderRadius: number;
+  tableStyle: string;
+  pageMargins: number;
+  structure: string;
+  watermark: boolean;
+  backgroundPattern: string;
+}
+
+export type InvoiceTheme = 'modern-corporate' | 'minimal-clean' | 'professional-blue' | 'dark-elegant' | 'startup-style' | 'financial-premium';
+
+export interface IInvoiceTemplate extends Document {
+  companyId: mongoose.Types.ObjectId;
+  name: string;
+  theme: InvoiceTheme;
+  sections: ITemplateSection[];
+  branding: ITemplateBranding;
+  themeSettings: ITemplateThemeSettings;
+  typography: ITemplateTypography;
+  layout: ITemplateLayout;
+  isDefault: boolean;
+  isPublished: boolean;
+  createdBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const TemplateSectionSchema = new Schema({
+  id: { type: String, required: true },
+  type: { type: String, required: true },
+  visible: { type: Boolean, default: true },
+  order: { type: Number, required: true },
+  column: { type: String, default: 'main' }
+}, { _id: false });
+
+const TemplateBrandingSchema = new Schema({
+  logoUrl: { type: String },
+  companyName: { type: String },
+  companyAddress: { type: String },
+  website: { type: String },
+  phone: { type: String },
+  defaultNotes: { type: String },
+  defaultTerms: { type: String }
+}, { _id: false });
+
+const TemplateThemeSettingsSchema = new Schema({
+  primaryColor: { type: String, default: '#FACC15' },
+  secondaryColor: { type: String, default: '#000000' },
+  accentColor: { type: String, default: '#3B82F6' }
+}, { _id: false });
+
+const TemplateTypographySchema = new Schema({
+  fontFamily: { type: String, default: 'Inter' },
+  headingSize: { type: Number, default: 24 },
+  bodySize: { type: Number, default: 14 },
+  fontWeight: { type: String, default: 'normal' }
+}, { _id: false });
+
+const TemplateLayoutSchema = new Schema({
+  headerStyle: { type: String, default: 'standard' },
+  footerStyle: { type: String, default: 'standard' },
+  sectionSpacing: { type: Number, default: 16 },
+  borderRadius: { type: Number, default: 0 },
+  tableStyle: { type: String, default: 'bordered' },
+  pageMargins: { type: Number, default: 40 },
+  structure: { type: String, default: 'standard' },
+  watermark: { type: Boolean, default: false },
+  backgroundPattern: { type: String, default: 'none' }
+}, { _id: false });
+
+const InvoiceTemplateSchema: Schema = new Schema({
+  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  name: { type: String, required: true },
+  theme: {
+    type: String,
+    enum: ['modern-corporate', 'minimal-clean', 'professional-blue', 'dark-elegant', 'startup-style', 'financial-premium'],
+    default: 'modern-corporate',
+    required: true
+  },
+  sections: { type: [TemplateSectionSchema], default: [] },
+  branding: { type: TemplateBrandingSchema, default: () => ({}) },
+  themeSettings: { type: TemplateThemeSettingsSchema, default: () => ({}) },
+  typography: { type: TemplateTypographySchema, default: () => ({}) },
+  layout: { type: TemplateLayoutSchema, default: () => ({}) },
+  isDefault: { type: Boolean, default: false },
+  isPublished: { type: Boolean, default: false },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+InvoiceTemplateSchema.index({ companyId: 1, name: 1 });
+InvoiceTemplateSchema.index({ companyId: 1, isDefault: 1 });
+
+export const InvoiceTemplate = mongoose.model<IInvoiceTemplate>('InvoiceTemplate', InvoiceTemplateSchema);

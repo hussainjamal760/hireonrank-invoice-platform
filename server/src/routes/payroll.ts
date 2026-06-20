@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Employee, PayrollRecord, ActivityLog, Payroll, Company } from '../models';
+import { Employee, PayrollRecord, ActivityLog, Company } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
 import { AccountingService } from '../services/accountingService';
 import { generateSalarySlipPDF } from '../utils/pdfGenerator';
@@ -378,12 +378,12 @@ router.get(
           filter.employeeId = employee._id;
         }
 
-        const records = await Payroll.find(filter).populate('employeeId').sort({ createdAt: -1 });
+        const records = await PayrollRecord.find(filter).populate('employeeId').sort({ createdAt: -1 });
         return res.status(200).json({ success: true, records });
       }
 
       // 2. Check if it's a new Payroll record by ID
-      let record = await Payroll.findById(id).populate('employeeId');
+      let record = await PayrollRecord.findById(id).populate('employeeId');
       if (record) {
         if (record.companyId.toString() !== companyId) {
           return res.status(403).json({ message: 'Forbidden: Record does not belong to your company' });
