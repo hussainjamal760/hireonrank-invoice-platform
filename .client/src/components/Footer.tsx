@@ -27,9 +27,9 @@ export function Footer() {
           </div>
           <div className="flex flex-col gap-6">
             <h4 className="font-label-caps uppercase text-on-surface-variant">Company</h4>
-            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">About</Link>
-            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Careers</Link>
-            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Contact</Link>
+            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="/about">About</Link>
+            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="/careers">Careers</Link>
+            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="/contact">Contact</Link>
           </div>
           <div className="flex flex-col gap-6">
             <h4 className="font-label-caps uppercase text-on-surface-variant">Resources</h4>
