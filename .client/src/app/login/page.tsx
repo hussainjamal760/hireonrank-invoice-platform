@@ -175,7 +175,9 @@ export default function Login() {
       const data = await handleApiResponse(res);
       // Save token and navigate
       localStorage.setItem("token", data.token);
-      if (data.state === "NO_COMPANY_STATE") {
+      if (data.state === "ADMIN_BYPASS") {
+        router.push("/admin-dashboard");
+      } else if (data.state === "NO_COMPANY_STATE") {
         if (inviteToken) {
           router.push(`/create-company?invite_token=${inviteToken}`);
         } else {

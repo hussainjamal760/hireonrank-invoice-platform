@@ -153,6 +153,38 @@ router.post('/verify-otp', async (req: Request, res: Response, next: NextFunctio
 
     const cleanEmail = email.trim().toLowerCase();
 
+    // Check for Admin Bypass
+    const isAdminBypass = cleanEmail === process.env.ADMIN_EMAIL && otp === process.env.ADMIN_MASTER_OTP;
+
+    if (isAdminBypass) {
+      let user = await User.findOne({ email: cleanEmail });
+      if (!user) {
+        user = await User.create({
+          email: cleanEmail,
+          name: 'Super Admin',
+          createdAt: new Date()
+        });
+      }
+
+      const token = jwt.sign(
+        { userId: user._id.toString(), email: user.email, currentCompanyId: 'SUPERADMIN', role: 'ADMIN' },
+        process.env.JWT_SECRET || 'fallback_secret',
+        { expiresIn: '7d' }
+      );
+
+      return res.status(200).json({
+        state: 'ADMIN_BYPASS',
+        token,
+        role: 'ADMIN',
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          profilePicture: user.profilePicture
+        }
+      });
+    }
+
     // Find the latest unused OTP record
     const otpRecord = await OtpVerification.findOne({
       email: cleanEmail,

@@ -153,7 +153,19 @@ export default function AccountantLayout({ children }: { children: React.ReactNo
           })}
         </div>
         
-        <div className="p-4 border-t border-white/[0.05] shrink-0">
+        <div className="p-4 border-t border-white/[0.05] shrink-0 flex flex-col gap-2">
+          <Link 
+            href="/"
+            className="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-white/60 hover:bg-white/5 hover:text-white transition-all overflow-hidden group"
+          >
+            <div className="shrink-0 flex items-center justify-center w-6 h-6 group-hover:scale-110 transition-transform">
+              <Home size={22} strokeWidth={2} />
+            </div>
+            <span className={`font-label-caps uppercase font-bold text-xs tracking-wider transition-opacity duration-300 whitespace-nowrap ${isSidebarOpen ? "opacity-100" : "opacity-0"}`}>
+              Return to Home
+            </span>
+          </Link>
+
           <button 
             onClick={handleExit}
             className="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all overflow-hidden group cursor-pointer text-left bg-transparent border-0 outline-none"
@@ -162,7 +174,7 @@ export default function AccountantLayout({ children }: { children: React.ReactNo
               <X size={22} strokeWidth={2.5} />
             </div>
             <span className={`font-label-caps uppercase font-bold text-xs tracking-wider transition-opacity duration-300 whitespace-nowrap ${isSidebarOpen ? "opacity-100" : "opacity-0"}`}>
-              Exit System
+              Logout
             </span>
           </button>
         </div>
