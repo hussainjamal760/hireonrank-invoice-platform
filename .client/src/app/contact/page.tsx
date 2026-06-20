@@ -55,26 +55,26 @@ export default function Contact() {
             
             <div className="lg:w-1/2">
               <FadeIn delay={0.2}>
-                <form className="bg-white border-[4px] border-on-background p-8 md:p-12 neo-brutal-shadow-lg flex flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
+                <form action="https://formspree.io/f/meepazwe" method="POST" className="bg-white border-[4px] border-on-background p-8 md:p-12 neo-brutal-shadow-lg flex flex-col gap-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col gap-2">
-                      <label className="font-label-caps uppercase text-on-background">Name</label>
-                      <input type="text" className="w-full bg-surface-container-low border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all" />
+                      <label htmlFor="name" className="font-label-caps uppercase text-on-background">Name</label>
+                      <input id="name" name="name" type="text" required className="w-full bg-surface-container-low border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all" />
                     </div>
                     <div className="flex flex-col gap-2">
-                      <label className="font-label-caps uppercase text-on-background">Company</label>
-                      <input type="text" className="w-full bg-surface-container-low border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all" />
+                      <label htmlFor="company" className="font-label-caps uppercase text-on-background">Company</label>
+                      <input id="company" name="company" type="text" className="w-full bg-surface-container-low border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all" />
                     </div>
                   </div>
                   
                   <div className="flex flex-col gap-2">
-                    <label className="font-label-caps uppercase text-on-background">Email</label>
-                    <input type="email" className="w-full bg-surface-container-low border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all" />
+                    <label htmlFor="email" className="font-label-caps uppercase text-on-background">Email</label>
+                    <input id="email" name="email" type="email" required className="w-full bg-surface-container-low border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all" />
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="font-label-caps uppercase text-on-background">Message</label>
-                    <textarea rows={4} className="w-full bg-surface-container-low border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all resize-none"></textarea>
+                    <label htmlFor="message" className="font-label-caps uppercase text-on-background">Message</label>
+                    <textarea id="message" name="message" required rows={4} className="w-full bg-surface-container-low border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all resize-none"></textarea>
                   </div>
 
                   <button type="submit" className="w-full bg-on-background text-primary-container py-5 font-label-caps text-lg border-[4px] border-on-background neo-brutal-shadow hover:neo-brutal-shadow-active hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase font-black flex items-center justify-center gap-3 mt-4">

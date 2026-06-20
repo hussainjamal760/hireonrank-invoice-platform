@@ -33,9 +33,9 @@ export function Footer() {
           </div>
           <div className="flex flex-col gap-6">
             <h4 className="font-label-caps uppercase text-on-surface-variant">Resources</h4>
-            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Help center</Link>
-            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">API docs</Link>
-            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Security</Link>
+            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="/help">Help center</Link>
+            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="/api-docs">API docs</Link>
+            <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="/security">Security</Link>
           </div>
         </div>
       </div>
