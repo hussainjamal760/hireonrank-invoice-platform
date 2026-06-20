@@ -32,7 +32,7 @@ router.get(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const companyId = req.user.currentCompanyId;
+      const companyId = req.user.currentCompanyId as string;
 
       // Date boundaries for current and previous months
       const now = new Date();
@@ -176,7 +176,7 @@ router.get(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const companyId = req.user.currentCompanyId;
+      const companyId = req.user.currentCompanyId as string;
 
       // Calculate date 6 months ago from the start of the current month
       const now = new Date();
@@ -244,7 +244,7 @@ router.get(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const companyId = req.user.currentCompanyId;
+      const companyId = req.user.currentCompanyId as string;
 
       const now = new Date();
       const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
@@ -317,7 +317,7 @@ router.get(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const companyId = req.user.currentCompanyId;
+      const companyId = req.user.currentCompanyId as string;
 
       const activities = await ActivityLog.find({ companyId })
         .sort({ createdAt: -1 })

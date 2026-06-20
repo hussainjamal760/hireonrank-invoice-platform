@@ -123,3 +123,189 @@ const InvitationSchema: Schema = new Schema({
 });
 
 export const Invitation = mongoose.model<IInvitation>('Invitation', InvitationSchema);
+
+// Employee Interface & Schema
+export interface IEmployee extends Document {
+  companyId: mongoose.Types.ObjectId;
+  userId?: mongoose.Types.ObjectId;
+  name: string;
+  email: string;
+  phone?: string;
+  designation?: string;
+  department?: string;
+  salary: number;
+  bankDetails?: {
+    accountNumber?: string;
+    bankName?: string;
+    ifscCode?: string;
+  };
+  status: 'ACTIVE' | 'INACTIVE';
+  joinDate: Date;
+  createdAt: Date;
+}
+
+const EmployeeSchema: Schema = new Schema({
+  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  userId: { type: Schema.Types.ObjectId, ref: 'User' },
+  name: { type: String, required: true },
+  email: { type: String, required: true },
+  phone: { type: String },
+  designation: { type: String },
+  department: { type: String },
+  salary: { type: Number, required: true, default: 0 },
+  bankDetails: {
+    accountNumber: { type: String },
+    bankName: { type: String },
+    ifscCode: { type: String }
+  },
+  status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE', required: true },
+  joinDate: { type: Date, default: Date.now },
+  createdAt: { type: Date, default: Date.now }
+});
+
+EmployeeSchema.index({ companyId: 1, email: 1 }, { unique: true });
+
+export const Employee = mongoose.model<IEmployee>('Employee', EmployeeSchema);
+
+// Invoice Interface & Schema
+export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+
+export interface IInvoiceItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+}
+
+export interface IInvoice extends Document {
+  companyId: mongoose.Types.ObjectId;
+  invoiceNumber: string;
+  clientName: string;
+  clientEmail?: string;
+  clientAddress?: string;
+  items: IInvoiceItem[];
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  totalAmount: number;
+  status: InvoiceStatus;
+  issueDate: Date;
+  dueDate: Date;
+  paidAt?: Date;
+  notes?: string;
+  createdBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+}
+
+const InvoiceItemSchema: Schema = new Schema({
+  description: { type: String, required: true },
+  quantity: { type: Number, required: true, min: 1 },
+  unitPrice: { type: Number, required: true, min: 0 },
+  amount: { type: Number, required: true, min: 0 }
+}, { _id: false });
+
+const InvoiceSchema: Schema = new Schema({
+  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  invoiceNumber: { type: String, required: true },
+  clientName: { type: String, required: true },
+  clientEmail: { type: String },
+  clientAddress: { type: String },
+  items: { type: [InvoiceItemSchema], required: true, validate: [(v: any[]) => v.length > 0, 'At least one item is required'] },
+  subtotal: { type: Number, required: true, min: 0 },
+  taxRate: { type: Number, default: 0, min: 0, max: 100 },
+  taxAmount: { type: Number, default: 0, min: 0 },
+  totalAmount: { type: Number, required: true, min: 0 },
+  status: { type: String, enum: ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED'], default: 'DRAFT', required: true },
+  issueDate: { type: Date, default: Date.now },
+  dueDate: { type: Date, required: true },
+  paidAt: { type: Date },
+  notes: { type: String },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+InvoiceSchema.index({ companyId: 1, invoiceNumber: 1 }, { unique: true });
+InvoiceSchema.index({ companyId: 1, status: 1 });
+InvoiceSchema.index({ companyId: 1, issueDate: -1 });
+
+export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema);
+
+// PayrollRecord Interface & Schema
+export type PayrollStatus = 'PENDING' | 'PROCESSED' | 'PAID';
+
+export interface IPayrollRecord extends Document {
+  companyId: mongoose.Types.ObjectId;
+  employeeId: mongoose.Types.ObjectId;
+  employeeName: string;
+  employeeEmail: string;
+  period: string;
+  baseSalary: number;
+  deductions: number;
+  bonuses: number;
+  netPay: number;
+  status: PayrollStatus;
+  paidAt?: Date;
+  generatedBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+}
+
+const PayrollRecordSchema: Schema = new Schema({
+  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  employeeId: { type: Schema.Types.ObjectId, ref: 'Employee', required: true },
+  employeeName: { type: String, required: true },
+  employeeEmail: { type: String, required: true },
+  period: { type: String, required: true },
+  baseSalary: { type: Number, required: true, min: 0 },
+  deductions: { type: Number, default: 0, min: 0 },
+  bonuses: { type: Number, default: 0, min: 0 },
+  netPay: { type: Number, required: true, min: 0 },
+  status: { type: String, enum: ['PENDING', 'PROCESSED', 'PAID'], default: 'PENDING', required: true },
+  paidAt: { type: Date },
+  generatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+PayrollRecordSchema.index({ companyId: 1, period: 1 });
+PayrollRecordSchema.index({ companyId: 1, employeeId: 1, period: 1 }, { unique: true });
+
+export const PayrollRecord = mongoose.model<IPayrollRecord>('PayrollRecord', PayrollRecordSchema);
+
+// ActivityLog Interface & Schema
+export type ActivityAction =
+  | 'INVOICE_CREATED' | 'INVOICE_SENT' | 'INVOICE_PAID' | 'INVOICE_CANCELLED'
+  | 'EMPLOYEE_ADDED' | 'EMPLOYEE_UPDATED' | 'EMPLOYEE_REMOVED'
+  | 'PAYROLL_GENERATED' | 'PAYROLL_PAID'
+  | 'MEMBER_INVITED' | 'MEMBER_JOINED'
+  | 'COMPANY_UPDATED';
+
+export interface IActivityLog extends Document {
+  companyId: mongoose.Types.ObjectId;
+  userId?: mongoose.Types.ObjectId;
+  action: ActivityAction;
+  description: string;
+  metadata?: Record<string, any>;
+  createdAt: Date;
+}
+
+const ActivityLogSchema: Schema = new Schema({
+  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  userId: { type: Schema.Types.ObjectId, ref: 'User' },
+  action: {
+    type: String,
+    enum: [
+      'INVOICE_CREATED', 'INVOICE_SENT', 'INVOICE_PAID', 'INVOICE_CANCELLED',
+      'EMPLOYEE_ADDED', 'EMPLOYEE_UPDATED', 'EMPLOYEE_REMOVED',
+      'PAYROLL_GENERATED', 'PAYROLL_PAID',
+      'MEMBER_INVITED', 'MEMBER_JOINED',
+      'COMPANY_UPDATED'
+    ],
+    required: true
+  },
+  description: { type: String, required: true },
+  metadata: { type: Schema.Types.Mixed },
+  createdAt: { type: Date, default: Date.now }
+});
+
+ActivityLogSchema.index({ companyId: 1, createdAt: -1 });
+
+export const ActivityLog = mongoose.model<IActivityLog>('ActivityLog', ActivityLogSchema);

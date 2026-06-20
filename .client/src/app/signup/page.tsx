@@ -37,6 +37,16 @@ export default function Signup() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("invite_token");
+    if (token) {
+      setInviteToken(token);
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('token')) {
       router.push('/admin-dashboard');
@@ -106,7 +116,11 @@ export default function Signup() {
 
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
-      router.push("/setup-company");
+      if (inviteToken) {
+        router.push(`/create-company?invite_token=${inviteToken}`);
+      } else {
+        router.push("/setup-company");
+      }
     } catch (err: any) {
       setError(err.message || "Failed to sign up with Google");
     } finally {
@@ -162,7 +176,11 @@ export default function Signup() {
 
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
-      router.push("/setup-company");
+      if (inviteToken) {
+        router.push(`/create-company?invite_token=${inviteToken}`);
+      } else {
+        router.push("/setup-company");
+      }
     } catch (err: any) {
       setError(err.message || "Signup verification failed");
     } finally {
@@ -316,7 +334,7 @@ export default function Signup() {
             className="mt-2 text-center"
           >
             <p className="font-body-md font-bold">
-              Already using Voicy? <Link href="/login" className="font-label-caps uppercase text-primary hover:underline underline-offset-4 ml-1">Log in here</Link>
+              Already using Voicy? <Link href={inviteToken ? `/login?invite_token=${inviteToken}` : "/login"} className="font-label-caps uppercase text-primary hover:underline underline-offset-4 ml-1">Log in here</Link>
             </p>
           </motion.div>
         </div>

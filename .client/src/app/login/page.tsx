@@ -34,6 +34,16 @@ export default function Login() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("invite_token");
+    if (token) {
+      setInviteToken(token);
+    }
+  }, []);
+
   // Google OAuth Initialization (Safe Single-Init Guard)
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('token')) {
@@ -106,7 +116,11 @@ export default function Login() {
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
       if (data.state === "NO_COMPANY_STATE") {
-        router.push("/create-company");
+        if (inviteToken) {
+          router.push(`/create-company?invite_token=${inviteToken}`);
+        } else {
+          router.push("/create-company");
+        }
       } else {
         router.push("/admin-dashboard");
       }
@@ -162,7 +176,11 @@ export default function Login() {
       // Save token and navigate
       localStorage.setItem("token", data.token);
       if (data.state === "NO_COMPANY_STATE") {
-        router.push("/create-company");
+        if (inviteToken) {
+          router.push(`/create-company?invite_token=${inviteToken}`);
+        } else {
+          router.push("/create-company");
+        }
       } else {
         router.push("/admin-dashboard");
       }
@@ -276,7 +294,7 @@ export default function Login() {
             className="mt-4 pt-8 border-t-[3px] border-on-background"
           >
             <p className="font-body-md font-bold text-center">
-              No account yet? <Link href="/signup" className="font-label-caps uppercase bg-primary-container border-[2px] border-on-background px-2 py-1 ml-2 hover:bg-white transition-colors">Sign up fast</Link>
+              No account yet? <Link href={inviteToken ? `/signup?invite_token=${inviteToken}` : "/signup"} className="font-label-caps uppercase bg-primary-container border-[2px] border-on-background px-2 py-1 ml-2 hover:bg-white transition-colors">Sign up fast</Link>
             </p>
           </motion.div>
         </div>

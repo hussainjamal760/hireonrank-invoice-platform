@@ -7,7 +7,7 @@ import { sendOtpEmail } from '../utils/email';
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+const getJwtSecret = () => process.env.JWT_SECRET || 'fallback_secret';
 
 // Helper to hash OTP using SHA-256
 const hashOtp = (otp: string): string => {
@@ -18,7 +18,7 @@ const hashOtp = (otp: string): string => {
 const generateToken = (userId: string, email: string, currentCompanyId: string | null, role: string | null): string => {
   return jwt.sign(
     { userId, email, currentCompanyId, role },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '7d' }
   );
 };

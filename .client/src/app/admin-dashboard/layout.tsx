@@ -24,20 +24,53 @@ const NAV_ITEMS = [
   { name: "Settings", href: "/admin-dashboard/settings", icon: Settings },
 ];
 
+function decodeToken(token: string) {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const pathname = usePathname();
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
+  const [navItems, setNavItems] = useState(NAV_ITEMS);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
       router.push("/login");
-    } else {
-      setAuthorized(true);
+      return;
     }
-  }, [router]);
+
+    const decoded = decodeToken(token);
+    if (decoded && decoded.role === 'EMPLOYEE') {
+      const employeeNavItems = [
+        { name: "My Salary Slips", href: "/admin-dashboard/salary-slips", icon: FileText }
+      ];
+      setNavItems(employeeNavItems);
+
+      if (pathname !== "/admin-dashboard/salary-slips") {
+        router.push("/admin-dashboard/salary-slips");
+        return;
+      }
+    } else {
+      setNavItems(NAV_ITEMS);
+    }
+
+    setAuthorized(true);
+  }, [router, pathname]);
 
   const handleExit = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -89,7 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <div className="flex-1 overflow-y-auto py-6 px-3 flex flex-col gap-2 no-scrollbar">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
 

@@ -4,15 +4,16 @@ import crypto from 'crypto';
 import { User, Company, UserCompany, Invitation } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
 import cloudinary from '../utils/cloudinary';
+import { sendInvitationEmail } from '../utils/email';
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+const getJwtSecret = () => process.env.JWT_SECRET || 'fallback_secret';
 
 const generateToken = (userId: string, email: string, currentCompanyId: string | null, role: string | null): string => {
   return jwt.sign(
     { userId, email, currentCompanyId, role },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '7d' }
   );
 };
@@ -164,8 +165,15 @@ router.post(
       await Invitation.findOneAndUpdate(
         { companyId: req.user.currentCompanyId, email: cleanEmail },
         { role, token, status: 'PENDING', createdAt: new Date() },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: 'after' }
       );
+
+      // Fetch company name to pass to email template
+      const company = await Company.findById(req.user.currentCompanyId);
+      const companyName = company ? company.name : 'Our Company';
+
+      // Send the actual invitation email
+      await sendInvitationEmail(cleanEmail, companyName, token, role);
 
       return res.status(200).json({
         success: true,
@@ -189,9 +197,49 @@ router.post('/join', authenticateToken, async (req: AuthRequest, res: Response, 
       return res.status(400).json({ message: 'Invitation token is required' });
     }
 
-    const invitation = await Invitation.findOne({ token, status: 'PENDING' });
+    const invitation = await Invitation.findOne({ token });
     if (!invitation) {
-      return res.status(400).json({ message: 'Invalid, used, or expired invitation token' });
+      return res.status(400).json({ message: 'Invalid or expired invitation token' });
+    }
+
+    // Handle case where user already accepted and is clicking/refreshing the link again
+    if (invitation.status === 'ACCEPTED') {
+      if (invitation.email !== req.user.email) {
+        return res.status(400).json({ message: 'Invitation has already been used by another account' });
+      }
+
+      const membership = await UserCompany.findOne({
+        userId: req.user.userId,
+        companyId: invitation.companyId
+      });
+
+      if (membership) {
+        const company = await Company.findById(invitation.companyId);
+        if (company) {
+          const newToken = generateToken(
+            req.user.userId,
+            req.user.email,
+            company._id.toString(),
+            membership.role
+          );
+
+          return res.status(200).json({
+            success: true,
+            token: newToken,
+            companyId: company._id,
+            role: membership.role,
+            company: {
+              id: company._id,
+              name: company.name,
+              logo: company.logo
+            }
+          });
+        }
+      }
+    }
+
+    if (invitation.status !== 'PENDING') {
+      return res.status(400).json({ message: 'Invitation is no longer active' });
     }
 
     if (invitation.email !== req.user.email) {
@@ -296,6 +344,134 @@ router.put(
           employeesCount: company.employeesCount
         }
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get(
+  '/members',
+  authenticateToken,
+  requireCompany,
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      if (!req.user || !req.user.currentCompanyId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const memberships = await UserCompany.find({ companyId: req.user.currentCompanyId }).populate('userId');
+
+      return res.status(200).json({
+        success: true,
+        members: memberships.map((m: any) => ({
+          id: m._id,
+          role: m.role,
+          createdAt: m.createdAt,
+          user: m.userId ? {
+            id: m.userId._id,
+            name: m.userId.name,
+            email: m.userId.email,
+            profilePicture: m.userId.profilePicture
+          } : null
+        }))
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.delete(
+  '/members/:id',
+  authenticateToken,
+  requireCompany,
+  requireRole(['OWNER', 'ADMIN']),
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      if (!req.user || !req.user.currentCompanyId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const membership = await UserCompany.findOne({
+        _id: req.params.id,
+        companyId: req.user.currentCompanyId
+      });
+
+      if (!membership) {
+        return res.status(404).json({ message: 'Member not found' });
+      }
+
+      if (membership.role === 'OWNER') {
+        const ownerCount = await UserCompany.countDocuments({
+          companyId: req.user.currentCompanyId,
+          role: 'OWNER'
+        });
+        if (ownerCount <= 1) {
+          return res.status(400).json({ message: 'Cannot remove the only owner of the company' });
+        }
+      }
+
+      await UserCompany.findByIdAndDelete(membership._id);
+
+      return res.status(200).json({ success: true, message: 'Member removed successfully' });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get(
+  '/invitations',
+  authenticateToken,
+  requireCompany,
+  requireRole(['OWNER', 'ADMIN']),
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      if (!req.user || !req.user.currentCompanyId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const invitations = await Invitation.find({ companyId: req.user.currentCompanyId, status: 'PENDING' });
+
+      return res.status(200).json({
+        success: true,
+        invitations: invitations.map((inv: any) => ({
+          id: inv._id,
+          email: inv.email,
+          role: inv.role,
+          status: inv.status,
+          token: inv.token,
+          createdAt: inv.createdAt
+        }))
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.delete(
+  '/invitations/:id',
+  authenticateToken,
+  requireCompany,
+  requireRole(['OWNER', 'ADMIN']),
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      if (!req.user || !req.user.currentCompanyId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const invitation = await Invitation.findOneAndDelete({
+        _id: req.params.id,
+        companyId: req.user.currentCompanyId
+      });
+
+      if (!invitation) {
+        return res.status(404).json({ message: 'Invitation not found' });
+      }
+
+      return res.status(200).json({ success: true, message: 'Invitation cancelled successfully' });
     } catch (err) {
       next(err);
     }

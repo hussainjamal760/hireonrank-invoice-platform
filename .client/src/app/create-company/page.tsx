@@ -16,10 +16,61 @@ export default function CreateCompany() {
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteToken = urlParams.get("invite_token");
+
     if (!storedToken) {
-      router.push("/login");
-    } else {
-      setToken(storedToken);
+      if (inviteToken) {
+        router.push(`/login?invite_token=${inviteToken}`);
+      } else {
+        router.push("/login");
+      }
+      return;
+    }
+
+    setToken(storedToken);
+
+    if (inviteToken) {
+      setLoading(true);
+      setError("");
+
+      fetch("/api/companies/join", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${storedToken}`
+        },
+        body: JSON.stringify({ token: inviteToken })
+      })
+        .then(async (res) => {
+          const contentType = res.headers.get("content-type");
+          let data: any = {};
+          if (contentType && contentType.includes("application/json")) {
+            data = await res.json();
+          } else {
+            const text = await res.text();
+            throw new Error(text || `Server returned status ${res.status}`);
+          }
+
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("token");
+            router.push(`/login?invite_token=${inviteToken}`);
+            throw new Error("Session expired. Redirecting to login...");
+          }
+
+          if (!res.ok) {
+            throw new Error(data.message || `Server returned error ${res.status}`);
+          }
+          return data;
+        })
+        .then((data) => {
+          localStorage.setItem("token", data.token);
+          router.push("/admin-dashboard");
+        })
+        .catch((err: any) => {
+          setError(err.message || "Failed to accept invitation");
+          setLoading(false);
+        });
     }
   }, [router]);
 

@@ -129,7 +129,7 @@ router.post(
       const existingRecords = await PayrollRecord.find({
         companyId,
         period,
-        employeeId: { $in: employees.map((e) => e._id) }
+        employeeId: { $in: employees.map((e: any) => e._id) }
       }).select('employeeId');
 
       const existingEmployeeIds = new Set(
@@ -213,6 +213,10 @@ router.get(
 
       // Build filter
       const filter: Record<string, any> = { companyId };
+
+      if (req.user!.role === 'EMPLOYEE') {
+        filter.employeeEmail = req.user!.email;
+      }
 
       if (req.query.period && typeof req.query.period === 'string') {
         filter.period = req.query.period;
