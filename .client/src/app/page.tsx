@@ -82,7 +82,7 @@ export default function Home() {
           <Link className="font-body-md text-body-md uppercase font-bold tracking-tighter text-on-background hover:text-primary transition-colors duration-200" href="#">Pricing</Link>
         </div>
         <div className="hidden md:flex gap-4 items-center">
-          <Link className="font-body-md uppercase font-bold tracking-tighter text-on-background hover:text-primary transition-colors" href="#">Log in</Link>
+          <Link className="font-body-md uppercase font-bold tracking-tighter text-on-background hover:text-primary transition-colors" href="/login">Log in</Link>
           <button className="bg-primary-container text-on-primary-container px-6 py-2 font-label-caps text-label-caps border-[3px] border-on-background neo-brutal-shadow hover:neo-brutal-shadow-active hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
             Start Free
           </button>
