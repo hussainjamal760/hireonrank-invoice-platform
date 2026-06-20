@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-// User Interface & Schema
 export interface IUser extends Document {
   name: string;
   email: string;
@@ -21,7 +20,6 @@ const UserSchema: Schema = new Schema({
 
 export const User = mongoose.model<IUser>('User', UserSchema);
 
-// OTP Verification Interface & Schema
 export interface IOtpVerification extends Document {
   email: string;
   otpHash: string;
@@ -38,16 +36,19 @@ const OtpVerificationSchema: Schema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Auto-delete OTPs after 1 hour to save space
 OtpVerificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 3600 });
 
 export const OtpVerification = mongoose.model<IOtpVerification>('OtpVerification', OtpVerificationSchema);
 
-// Company Interface & Schema
 export interface ICompany extends Document {
   name: string;
   logo?: string;
   ownerId: mongoose.Types.ObjectId;
+  address?: string;
+  country?: string;
+  location?: { lat: number; lng: number };
+  companyType?: string;
+  employeesCount?: string;
   createdAt: Date;
 }
 
@@ -55,12 +56,19 @@ const CompanySchema: Schema = new Schema({
   name: { type: String, required: true },
   logo: { type: String },
   ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  address: { type: String },
+  country: { type: String },
+  location: {
+    lat: { type: Number },
+    lng: { type: Number }
+  },
+  companyType: { type: String },
+  employeesCount: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 
 export const Company = mongoose.model<ICompany>('Company', CompanySchema);
 
-// UserCompany Interface & Schema (Multi-tenant company links)
 export type UserRole = 'OWNER' | 'ADMIN' | 'EMPLOYEE' | 'ACCOUNTANT';
 
 export interface IUserCompany extends Document {
@@ -81,12 +89,10 @@ const UserCompanySchema: Schema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Ensure a user can only have one membership role per company
 UserCompanySchema.index({ userId: 1, companyId: 1 }, { unique: true });
 
 export const UserCompany = mongoose.model<IUserCompany>('UserCompany', UserCompanySchema);
 
-// Invitation Interface & Schema
 export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED';
 
 export interface IInvitation extends Document {

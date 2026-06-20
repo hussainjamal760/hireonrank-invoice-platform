@@ -10,7 +10,6 @@ export default function Signup() {
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Form State
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -38,7 +37,6 @@ export default function Signup() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  // Google OAuth Initialization (Safe Single-Init Guard)
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('token')) {
       router.push('/admin-dashboard');
@@ -108,7 +106,7 @@ export default function Signup() {
 
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
-      router.push("/admin-dashboard");
+      router.push("/setup-company");
     } catch (err: any) {
       setError(err.message || "Failed to sign up with Google");
     } finally {
@@ -116,7 +114,6 @@ export default function Signup() {
     }
   };
 
-  // Submit email to send OTP
   const handleSendOtp = async (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     if (!email) return setError("Please enter your work email first");
@@ -145,7 +142,6 @@ export default function Signup() {
     }
   };
 
-  // Submit registration form
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!firstName || !lastName) return setError("Please enter your name");
@@ -166,7 +162,7 @@ export default function Signup() {
 
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
-      router.push("/admin-dashboard");
+      router.push("/setup-company");
     } catch (err: any) {
       setError(err.message || "Signup verification failed");
     } finally {
@@ -177,7 +173,6 @@ export default function Signup() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row-reverse bg-background overflow-hidden">
       
-      {/* Right Form Area */}
       <div className="w-full lg:w-5/12 flex items-center justify-center p-8 lg:p-12 z-20 bg-surface-container-low border-b-[4px] lg:border-b-0 lg:border-l-[4px] border-on-background relative overflow-y-auto">
         <div className="w-full max-w-md flex flex-col gap-8 py-8">
           <motion.div
@@ -211,7 +206,6 @@ export default function Signup() {
             </div>
           )}
 
-          {/* Dev OTP Box */}
           {devOtp && (
             <div className="bg-primary-container border-[3px] border-on-background p-4 neo-brutal-shadow">
               <p className="font-bold text-sm uppercase">🔧 Development Mode Sandbox OTP</p>
@@ -260,8 +254,6 @@ export default function Signup() {
                 className="w-full bg-white border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all" 
               />
             </div>
-
-            {/* Note: Company Name field is excluded here as per instructions */}
 
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
@@ -313,7 +305,6 @@ export default function Signup() {
             </button>
           </motion.form>
 
-          {/* Social signup section */}
           <div className="mt-2 flex flex-col items-center gap-4">
             <div id="google-signup-btn" className="w-full flex justify-center"></div>
           </div>
@@ -331,7 +322,6 @@ export default function Signup() {
         </div>
       </div>
 
-      {/* Left Showcase Area */}
       <div 
         ref={containerRef}
         className="hidden lg:flex w-7/12 bg-on-background text-white relative flex-col justify-center overflow-hidden"
@@ -349,7 +339,6 @@ export default function Signup() {
           </motion.div>
         </div>
 
-        {/* Live Network Stats */}
         <div className="w-full max-w-2xl mx-auto z-20 px-12">
           <motion.h2 
             initial={{ opacity: 0, x: -40 }}
@@ -392,7 +381,6 @@ export default function Signup() {
           </div>
         </div>
 
-        {/* Floating Code Snippet / Terminal lines */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

@@ -3,12 +3,12 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { User, Company, UserCompany, Invitation } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
+import cloudinary from '../utils/cloudinary';
 
 const router = Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
-// Helper to generate a new JWT token
 const generateToken = (userId: string, email: string, currentCompanyId: string | null, role: string | null): string => {
   return jwt.sign(
     { userId, email, currentCompanyId, role },
@@ -17,10 +17,6 @@ const generateToken = (userId: string, email: string, currentCompanyId: string |
   );
 };
 
-/**
- * GET /companies/my
- * Returns a list of companies the user is associated with.
- */
 router.get('/my', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
   try {
     if (!req.user) {
@@ -41,11 +37,6 @@ router.get('/my', authenticateToken, async (req: AuthRequest, res: Response, nex
   }
 });
 
-/**
- * POST /companies/select
- * Request: { companyId }
- * Selects a company and issues a new dashboard JWT token.
- */
 router.post('/select', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
   try {
     if (!req.user) {
@@ -90,11 +81,6 @@ router.post('/select', authenticateToken, async (req: AuthRequest, res: Response
   }
 });
 
-/**
- * POST /companies
- * Request: { name, logo }
- * Creates a new company and registers the user as OWNER.
- */
 router.post('/', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
   try {
     if (!req.user) {
@@ -106,21 +92,18 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response, next
       return res.status(400).json({ message: 'Company name is required' });
     }
 
-    // 1. Create the Company
     const company = await Company.create({
       name: name.trim(),
       logo: logo || '',
       ownerId: req.user.userId
     });
 
-    // 2. Link User with Company as OWNER
     await UserCompany.create({
       userId: req.user.userId,
       companyId: company._id,
       role: 'OWNER'
     });
 
-    // 3. Issue new JWT token with company context
     const token = generateToken(
       req.user.userId,
       req.user.email,
@@ -143,11 +126,6 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response, next
   }
 });
 
-/**
- * POST /companies/invite
- * Request: { email, role }
- * Protected: Requires OWNER or ADMIN role inside selected company
- */
 router.post(
   '/invite',
   authenticateToken,
@@ -170,7 +148,6 @@ router.post(
         return res.status(400).json({ message: 'Invalid role' });
       }
 
-      // Check if user is already in the company
       const existingUser = await User.findOne({ email: cleanEmail });
       if (existingUser) {
         const membership = await UserCompany.findOne({
@@ -182,26 +159,18 @@ router.post(
         }
       }
 
-      // Generate a unique token
       const token = crypto.randomBytes(32).toString('hex');
 
-      // Create or update invitation
       await Invitation.findOneAndUpdate(
         { companyId: req.user.currentCompanyId, email: cleanEmail },
         { role, token, status: 'PENDING', createdAt: new Date() },
         { upsert: true, new: true }
       );
 
-      console.log(`\n==========================================`);
-      console.log(`[INVITATION SERVICE] Invited ${cleanEmail} to company ${req.user.currentCompanyId}`);
-      console.log(`Invitation Token: ${token}`);
-      console.log(`Join Link: http://localhost:3000/create-company?invite_token=${token}`);
-      console.log(`==========================================\n`);
-
       return res.status(200).json({
         success: true,
         message: 'Invitation sent successfully',
-        token // Exposing token for dev testing
+        token 
       });
     } catch (err) {
       next(err);
@@ -209,11 +178,6 @@ router.post(
   }
 );
 
-/**
- * POST /companies/join
- * Request: { token }
- * Joins a company via a pending invitation.
- */
 router.post('/join', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
   try {
     if (!req.user) {
@@ -236,11 +200,9 @@ router.post('/join', authenticateToken, async (req: AuthRequest, res: Response, 
       });
     }
 
-    // Accept invitation
     invitation.status = 'ACCEPTED';
     await invitation.save();
 
-    // Check if membership already exists (failsafe)
     let membership = await UserCompany.findOne({
       userId: req.user.userId,
       companyId: invitation.companyId
@@ -254,13 +216,11 @@ router.post('/join', authenticateToken, async (req: AuthRequest, res: Response, 
       });
     }
 
-    // Retrieve company details
     const company = await Company.findById(invitation.companyId);
     if (!company) {
       return res.status(404).json({ message: 'Company not found' });
     }
 
-    // Issue JWT with new company context
     const newToken = generateToken(
       req.user.userId,
       req.user.email,
@@ -283,5 +243,63 @@ router.post('/join', authenticateToken, async (req: AuthRequest, res: Response, 
     next(err);
   }
 });
+
+router.put(
+  '/setup',
+  authenticateToken,
+  requireCompany,
+  requireRole(['OWNER', 'ADMIN']),
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      if (!req.user || !req.user.currentCompanyId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const { name, address, country, location, companyType, employeesCount, logo } = req.body;
+
+      const company = await Company.findById(req.user.currentCompanyId);
+      if (!company) {
+        return res.status(404).json({ message: 'Company not found' });
+      }
+
+      if (name) company.name = name.trim();
+      if (address !== undefined) company.address = address;
+      if (country !== undefined) company.country = country;
+      if (location !== undefined) company.location = location;
+      if (companyType !== undefined) company.companyType = companyType;
+      if (employeesCount !== undefined) company.employeesCount = employeesCount;
+
+      if (logo && typeof logo === 'string' && logo.startsWith('data:image')) {
+        try {
+          const uploadRes = await cloudinary.uploader.upload(logo, { folder: 'logos' });
+          company.logo = uploadRes.secure_url;
+        } catch (error) {
+          console.error("Cloudinary Upload Error:", error);
+        }
+      } else if (logo && typeof logo === 'string') {
+        company.logo = logo;
+      }
+
+      await company.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Company details updated successfully',
+        company: {
+          id: company._id,
+          name: company.name,
+          logo: company.logo,
+          address: company.address,
+          country: company.country,
+          location: company.location,
+          companyType: company.companyType,
+          employeesCount: company.employeesCount
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 export default router;
