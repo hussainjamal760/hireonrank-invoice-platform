@@ -7,7 +7,7 @@ import {
   FileText, Plus, Trash2, Save, ArrowLeft, 
   Upload, User, PlusCircle, CreditCard, Calendar,
   Briefcase, Percent, Calculator, Image as ImageIcon,
-  CheckCircle2, ShieldAlert
+  CheckCircle2, ShieldAlert, ScrollText
 } from "lucide-react";
 
 interface Employee {
