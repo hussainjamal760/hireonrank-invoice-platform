@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, UserPlus, Mail, ShieldAlert, CheckCircle2,
@@ -37,27 +38,28 @@ interface EmployeeProfile {
 }
 
 export default function EmployeesTab() {
+  const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("All");
+
+  const uniqueDepartments = ["All", ...Array.from(new Set(employees.map(e => e.department).filter(Boolean)))];
+
+  const filteredEmployees = employees.filter(emp => {
+    const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          emp.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesDepartment = departmentFilter === "All" || emp.department === departmentFilter;
+    return matchesSearch && matchesDepartment;
+  });
 
   // Modals & Selected Profile State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employeeProfile, setEmployeeProfile] = useState<EmployeeProfile | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
-
-  // Add Employee Form State
-  const [addForm, setAddForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    designation: "",
-    department: "",
-    salary: 0,
-  });
 
   // Temporary Inputs for Allowances/Taxes
   const [newAllowance, setNewAllowance] = useState({ name: "", amount: "" });
@@ -86,34 +88,6 @@ export default function EmployeesTab() {
   useEffect(() => {
     fetchEmployees();
   }, []);
-
-  const handleAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    try {
-      const res = await fetch("/api/employee/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(addForm)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to add employee");
-
-      setSuccess(`Employee "${data.employee.name}" added successfully!`);
-      setIsAddModalOpen(false);
-      setAddForm({ name: "", email: "", phone: "", designation: "", department: "", salary: 0 });
-      fetchEmployees();
-    } catch (err: any) {
-      setError(err.message || "Failed to add employee");
-    }
-  };
 
   const handleOpenProfile = async (employee: Employee) => {
     setSelectedEmployee(employee);
@@ -236,7 +210,7 @@ export default function EmployeesTab() {
           <p className="font-body-md text-on-surface-variant font-bold mt-2">Manage employee compensation, allowances, and tax deductions.</p>
         </div>
         <button 
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={() => router.push('/accountant-dashboard/users')}
           className="bg-[#FACC15] text-black border-[3px] border-black px-6 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-black hover:text-[#FACC15] transition-colors shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
         >
           Add Employee
@@ -258,6 +232,26 @@ export default function EmployeesTab() {
         </div>
       )}
 
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4 mb-2">
+        <input
+          type="text"
+          placeholder="Search by name or email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-1 bg-white border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15] shadow-[4px_4px_0_0_#000000]"
+        />
+        <select
+          value={departmentFilter}
+          onChange={(e) => setDepartmentFilter(e.target.value)}
+          className="bg-white border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15] shadow-[4px_4px_0_0_#000000] cursor-pointer appearance-none md:min-w-[200px]"
+        >
+          {uniqueDepartments.map(dept => (
+            <option key={dept as string} value={dept as string}>{dept as string}</option>
+          ))}
+        </select>
+      </div>
+
       {/* Table */}
       <div className="bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000]">
         {loading ? (
@@ -277,13 +271,14 @@ export default function EmployeesTab() {
                 <tr className="bg-[#FACC15] border-b-[3px] border-black font-label-caps text-xs uppercase font-black text-black">
                   <th className="p-4 border-r-[2px] border-black">Employee</th>
                   <th className="p-4 border-r-[2px] border-black">Email</th>
+                  <th className="p-4 border-r-[2px] border-black">Department</th>
                   <th className="p-4 border-r-[2px] border-black">Designation</th>
                   <th className="p-4 border-r-[2px] border-black">Base Salary</th>
                   <th className="p-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y-[1px] divide-black font-mono text-sm">
-                {employees.map((emp) => (
+                {filteredEmployees.map((emp) => (
                   <tr key={emp._id} className="hover:bg-[#FACC15]/10 text-black">
                     <td className="p-4 border-r-[2px] border-black font-bold flex items-center gap-3">
                       <div className="w-8 h-8 rounded-none border-[2px] border-black bg-surface-container flex items-center justify-center text-xs font-black shadow-[1px_1px_0_0_#000000]">
@@ -292,6 +287,7 @@ export default function EmployeesTab() {
                       <span>{emp.name}</span>
                     </td>
                     <td className="p-4 border-r-[2px] border-black font-bold text-xs">{emp.email}</td>
+                    <td className="p-4 border-r-[2px] border-black">{emp.department || "N/A"}</td>
                     <td className="p-4 border-r-[2px] border-black">{emp.designation || "N/A"}</td>
                     <td className="p-4 border-r-[2px] border-black font-bold">${emp.salary?.toLocaleString()}</td>
                     <td className="p-4 text-center">
@@ -309,110 +305,6 @@ export default function EmployeesTab() {
           </div>
         )}
       </div>
-
-      {/* Add Employee Modal */}
-      <AnimatePresence>
-        {isAddModalOpen && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white border-[4px] border-black p-6 w-full max-w-lg neo-brutal-shadow-lg"
-            >
-              <div className="flex justify-between items-center border-b-[3px] border-black pb-4 mb-6">
-                <h2 className="font-display-md text-2xl uppercase font-black flex items-center gap-2">
-                  <UserPlus size={24} /> Add Employee
-                </h2>
-                <button onClick={() => setIsAddModalOpen(false)} className="text-black hover:text-[#FACC15] transition-colors">
-                  <X size={24} strokeWidth={2.5} />
-                </button>
-              </div>
-
-              <form onSubmit={handleAddSubmit} className="flex flex-col gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="font-label-caps uppercase text-xs font-bold">Full Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="John Doe"
-                      value={addForm.name}
-                      onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
-                      className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15]"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="font-label-caps uppercase text-xs font-bold">Email Address</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="john@company.com"
-                      value={addForm.email}
-                      onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
-                      className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15]"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="font-label-caps uppercase text-xs font-bold">Phone Number</label>
-                    <input
-                      type="text"
-                      placeholder="+1 (555) 000-0000"
-                      value={addForm.phone}
-                      onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
-                      className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15]"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="font-label-caps uppercase text-xs font-bold">Designation</label>
-                    <input
-                      type="text"
-                      placeholder="Software Architect"
-                      value={addForm.designation}
-                      onChange={(e) => setAddForm({ ...addForm, designation: e.target.value })}
-                      className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15]"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="font-label-caps uppercase text-xs font-bold">Department</label>
-                    <input
-                      type="text"
-                      placeholder="Engineering"
-                      value={addForm.department}
-                      onChange={(e) => setAddForm({ ...addForm, department: e.target.value })}
-                      className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15]"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="font-label-caps uppercase text-xs font-bold">Base Salary (USD)</label>
-                    <input
-                      type="number"
-                      required
-                      placeholder="6000"
-                      value={addForm.salary || ""}
-                      onChange={(e) => setAddForm({ ...addForm, salary: parseFloat(e.target.value) || 0 })}
-                      className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15]"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-black text-white py-4 font-label-caps border-[3px] border-black hover:bg-[#FACC15] hover:text-black transition-colors uppercase font-black flex items-center justify-center gap-2 mt-4 shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
-                >
-                  Create Employee Ledger
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Financial Profile Modal */}
       <AnimatePresence>

@@ -55,6 +55,7 @@ export interface ICompany extends Document {
   location?: { lat: number; lng: number };
   companyType?: string;
   employeesCount?: string;
+  departments?: string[];
   createdAt: Date;
 }
 
@@ -70,6 +71,7 @@ const CompanySchema: Schema = new Schema({
   },
   companyType: { type: String },
   employeesCount: { type: String },
+  departments: { type: [String], default: [] },
   createdAt: { type: Date, default: Date.now }
 });
 
