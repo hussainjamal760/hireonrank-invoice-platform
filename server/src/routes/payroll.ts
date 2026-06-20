@@ -1,111 +1,10 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Employee, PayrollRecord, ActivityLog, Company, Payroll, PayrollInvoice } from '../models';
+import { Employee, PayrollRecord, ActivityLog, Company } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
 import { AccountingService } from '../services/accountingService';
 import { generateSalarySlipPDF } from '../utils/pdfGenerator';
-import mongoose from 'mongoose';
 
 const router = Router();
-
-/**
- * Helper to fetch, map, and merge legacy and modern payroll records.
- */
-const getMergedPayroll = async (
-  companyId: string,
-  userEmail?: string,
-  employeeIdFilter?: string,
-  periodFilter?: string,
-  statusFilter?: string
-) => {
-  // 1. Resolve employee if email filter is provided
-  let employee = null;
-  if (userEmail) {
-    employee = await Employee.findOne({ companyId, email: userEmail });
-  }
-
-  // 2. Build legacy filter
-  const legacyFilter: any = { companyId };
-  if (userEmail) {
-    legacyFilter.employeeEmail = userEmail;
-  } else if (employeeIdFilter) {
-    legacyFilter.employeeId = employeeIdFilter;
-  }
-  if (periodFilter) legacyFilter.period = periodFilter;
-
-  // 3. Build modern filter
-  const modernFilter: any = { companyId };
-  if (userEmail) {
-    if (employee) {
-      modernFilter.employeeId = employee._id;
-    } else {
-      return []; // Return empty if no matching employee profile exists
-    }
-  } else if (employeeIdFilter) {
-    modernFilter.employeeId = employeeIdFilter;
-  }
-  if (periodFilter) modernFilter.month = periodFilter;
-
-  // 4. Fetch legacy and modern records
-  const [legacyRecords, modernRecords] = await Promise.all([
-    PayrollRecord.find(legacyFilter).populate('employeeId').sort({ createdAt: -1 }),
-    Payroll.find(modernFilter).populate('employeeId').sort({ createdAt: -1 })
-  ]);
-
-  // 5. Map modern records
-  const mappedModern = await Promise.all(
-    modernRecords.map(async (record: any) => {
-      const pInv = await PayrollInvoice.findOne({
-        companyId: record.companyId,
-        employeeId: record.employeeId._id,
-        month: record.month
-      });
-
-      const rawStatus = pInv ? pInv.status.toUpperCase() : 'PENDING';
-      const status = rawStatus === 'GENERATED' ? 'PROCESSED' : rawStatus;
-
-      return {
-        _id: pInv ? pInv._id : record._id,
-        employeeId: record.employeeId,
-        employeeName: record.employeeId.name,
-        employeeEmail: record.employeeId.email,
-        period: record.month,
-        baseSalary: record.baseSalary,
-        deductions: record.totalTax,
-        bonuses: record.totalAllowances,
-        netPay: record.netSalary,
-        status: status,
-        createdAt: record.createdAt
-      };
-    })
-  );
-
-  // 6. Map legacy records
-  const mappedLegacy = legacyRecords.map((record: any) => ({
-    _id: record._id,
-    employeeId: record.employeeId,
-    employeeName: record.employeeName,
-    employeeEmail: record.employeeEmail,
-    period: record.period,
-    baseSalary: record.baseSalary,
-    deductions: record.deductions,
-    bonuses: record.bonuses,
-    netPay: record.netPay,
-    status: record.status.toUpperCase(),
-    createdAt: record.createdAt
-  }));
-
-  // 7. Combine, filter by status, and sort by date
-  let combined = [...mappedLegacy, ...mappedModern];
-
-  if (statusFilter) {
-    const filterUpper = statusFilter.toUpperCase();
-    combined = combined.filter((r) => r.status === filterUpper);
-  }
-
-  combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  return combined;
-};
 
 /**
  * GET /payroll/:id/download
@@ -406,19 +305,30 @@ router.get(
       const limit = Math.min(Math.max(parseInt(req.query.limit as string, 10) || 20, 1), 100);
       const skip = (page - 1) * limit;
 
-      const allRecords = await getMergedPayroll(
-        companyId,
-        req.user!.role === 'EMPLOYEE' ? req.user!.email : undefined,
-        req.query.employeeId as string,
-        req.query.period as string,
-        req.query.status as string
-      );
+      // Build filter
+      const filter: Record<string, any> = { companyId };
 
-      const paginatedRecords = allRecords.slice(skip, skip + limit);
-      const total = allRecords.length;
+      if (req.user!.role === 'EMPLOYEE') {
+        filter.employeeEmail = req.user!.email;
+      }
+
+      if (req.query.period && typeof req.query.period === 'string') {
+        filter.period = req.query.period;
+      }
+      if (req.query.status && typeof req.query.status === 'string') {
+        filter.status = req.query.status;
+      }
+      if (req.query.employeeId && typeof req.query.employeeId === 'string') {
+        filter.employeeId = req.query.employeeId;
+      }
+
+      const [records, total] = await Promise.all([
+        PayrollRecord.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        PayrollRecord.countDocuments(filter)
+      ]);
 
       return res.status(200).json({
-        records: paginatedRecords,
+        records,
         pagination: {
           page,
           limit,
@@ -513,62 +423,81 @@ router.get(
       const companyId = req.user!.currentCompanyId as string;
       const { id } = req.params;
 
-      // 1. If it matches current company ID, it's fetching company payroll list
+      // 1. If it matches current company ID, it's fetching company payroll
       if (id === companyId) {
-        const records = await getMergedPayroll(
-          id,
-          req.user!.role === 'EMPLOYEE' ? req.user!.email : undefined
-        );
+        const filter: any = { companyId: id };
+        if (req.user!.role === 'EMPLOYEE') {
+          const employee = await Employee.findOne({ companyId, email: req.user!.email });
+          if (!employee) return res.status(200).json({ success: true, records: [] });
+          filter.employeeId = employee._id;
+        }
+
+        const oldRecords = await PayrollRecord.find(filter).populate('employeeId').sort({ createdAt: -1 }).lean();
+        const { PayrollInvoice, Payroll, EmployeeProfile } = await import('../models');
+        const profiles = await EmployeeProfile.find({ companyId: id }).lean();
+
+        const getCurrency = (empId: string) => {
+          const prof = profiles.find((p: any) => p.employeeId.toString() === empId.toString());
+          return prof ? prof.currency : 'USD';
+        };
+
+        const mappedOldRecords = oldRecords.map((r: any) => ({
+          _id: r._id,
+          employeeId: r.employeeId,
+          month: r.period,
+          baseSalary: r.baseSalary,
+          totalAllowances: r.bonuses || 0,
+          totalTax: r.deductions || 0,
+          netSalary: r.netPay,
+          status: r.status,
+          currency: getCurrency(r.employeeId?._id || r.employeeId),
+          createdAt: r.createdAt
+        }));
+
+        const newPayrolls = await Payroll.find(filter).populate('employeeId').sort({ createdAt: -1 }).lean();
+        const newInvoices = await PayrollInvoice.find({ companyId: id }).lean();
+        
+        const mappedNewRecords = newPayrolls.map((p: any) => {
+          const inv = newInvoices.find((i: any) => i.employeeId.toString() === p.employeeId._id.toString() && i.month === p.month);
+          return {
+            _id: inv ? inv._id : p._id, // Use invoice ID so download and status endpoints work seamlessly
+            employeeId: p.employeeId,
+            month: p.month,
+            baseSalary: p.baseSalary,
+            totalAllowances: p.totalAllowances,
+            totalTax: p.totalTax,
+            netSalary: p.netSalary,
+            status: inv ? (inv.status === 'generated' ? 'PROCESSED' : inv.status.toUpperCase()) : 'PROCESSED',
+            currency: getCurrency(p.employeeId?._id || p.employeeId),
+            createdAt: p.createdAt
+          };
+        });
+
+        const records = [...mappedNewRecords, ...mappedOldRecords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
         return res.status(200).json({ success: true, records });
       }
 
-      // 2. Check if it's a new Payroll record by ID or a PayrollInvoice ID
-      let record = await Payroll.findById(id).populate('employeeId');
-      if (!record) {
-        const pInv = await PayrollInvoice.findById(id);
-        if (pInv) {
-          record = await Payroll.findOne({ companyId, employeeId: pInv.employeeId, month: pInv.month }).populate('employeeId');
-        }
-      }
-
+      // 2. Check if it's a new Payroll record by ID
+      let record = await PayrollRecord.findById(id).populate('employeeId');
       if (record) {
         if (record.companyId.toString() !== companyId) {
           return res.status(403).json({ message: 'Forbidden: Record does not belong to your company' });
         }
         if (req.user!.role === 'EMPLOYEE') {
           const employee = await Employee.findOne({ companyId, email: req.user!.email });
-          if (!employee || (record.employeeId as any)._id.toString() !== employee._id.toString()) {
+          if (!employee || record.employeeId.toString() !== employee._id.toString()) {
             return res.status(403).json({ message: 'Forbidden: Access denied' });
           }
         }
-        
-        const pInv = await PayrollInvoice.findOne({ companyId, employeeId: (record.employeeId as any)._id, month: record.month });
-        const rawStatus = pInv ? pInv.status.toUpperCase() : 'PENDING';
-        const status = rawStatus === 'GENERATED' ? 'PROCESSED' : rawStatus;
-
-        return res.status(200).json({
-          _id: pInv ? pInv._id : record._id,
-          employeeId: record.employeeId,
-          employeeName: (record.employeeId as any).name,
-          employeeEmail: (record.employeeId as any).email,
-          period: record.month,
-          baseSalary: record.baseSalary,
-          deductions: record.totalTax,
-          bonuses: record.totalAllowances,
-          netPay: record.netSalary,
-          status: status,
-          createdAt: record.createdAt
-        });
+        return res.status(200).json(record);
       }
 
       // 3. Fallback: try checking if it's an old PayrollRecord by ID
-      const oldRecord = await PayrollRecord.findById(id).populate('employeeId');
+      const oldRecord = await PayrollRecord.findById(id);
       if (oldRecord) {
         if (oldRecord.companyId.toString() !== companyId) {
           return res.status(403).json({ message: 'Forbidden: Record does not belong to your company' });
-        }
-        if (req.user!.role === 'EMPLOYEE' && oldRecord.employeeEmail !== req.user!.email) {
-          return res.status(403).json({ message: 'Forbidden: Access denied' });
         }
         return res.status(200).json(oldRecord);
       }
@@ -607,7 +536,14 @@ router.patch(
         return res.status(400).json({ message: 'Status is required' });
       }
 
-      const record = await PayrollRecord.findById(req.params.id);
+      let recordType = 'old';
+      let record: any = await PayrollRecord.findById(req.params.id);
+
+      if (!record) {
+        const { PayrollInvoice } = await import('../models');
+        record = await PayrollInvoice.findById(req.params.id);
+        if (record) recordType = 'new';
+      }
 
       if (!record) {
         return res.status(404).json({ message: 'Payroll record not found' });
@@ -617,19 +553,23 @@ router.patch(
         return res.status(403).json({ message: 'Forbidden: Record does not belong to your company' });
       }
 
-      // Validate status transitions
-      const validTransitions: Record<string, string> = {
-        PENDING: 'PROCESSED',
-        PROCESSED: 'PAID'
-      };
+      if (recordType === 'new') {
+        const newStatus = status === 'PAID' ? 'paid' : status.toLowerCase();
+        record.status = newStatus;
+      } else {
+        // Validate status transitions
+        const validTransitions: Record<string, string> = {
+          PENDING: 'PROCESSED',
+          PROCESSED: 'PAID'
+        };
 
-      if (validTransitions[record.status] !== status) {
-        return res.status(400).json({
-          message: `Invalid status transition: ${record.status} -> ${status}. Allowed: ${record.status} -> ${validTransitions[record.status] || 'none (terminal state)'}`
-        });
+        if (validTransitions[record.status] !== status && record.status !== status) {
+          return res.status(400).json({
+            message: `Invalid status transition: ${record.status} -> ${status}. Allowed: ${record.status} -> ${validTransitions[record.status] || 'none (terminal state)'}`
+          });
+        }
+        record.status = status;
       }
-
-      record.status = status;
 
       // Set paidAt timestamp when marking as PAID
       if (status === 'PAID') {
@@ -644,12 +584,12 @@ router.patch(
           companyId,
           userId: req.user!.userId,
           action: 'PAYROLL_PAID',
-          description: `Payroll record for ${record.employeeName} (${record.period}) marked as PAID`,
+          description: `Payroll record marked as PAID`,
           metadata: {
             payrollRecordId: record._id,
             employeeId: record.employeeId,
-            period: record.period,
-            netPay: record.netPay
+            period: record.period || record.month,
+            netPay: record.netPay || record.amount
           }
         });
       }

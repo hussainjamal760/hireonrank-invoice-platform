@@ -53,15 +53,8 @@ export default function AccountantLayout({ children }: { children: React.ReactNo
 
     const decoded = decodeToken(token);
     if (decoded && decoded.role === 'EMPLOYEE') {
-      const employeeNavItems = [
-        { name: "My Salary Slips", href: "/accountant-dashboard/salary-slips", icon: FileText }
-      ];
-      setNavItems(employeeNavItems);
-
-      if (pathname !== "/accountant-dashboard/salary-slips") {
-        router.push("/accountant-dashboard/salary-slips");
-        return;
-      }
+      router.push("/employee-dashboard");
+      return;
     } else {
       setNavItems(NAV_ITEMS);
     }

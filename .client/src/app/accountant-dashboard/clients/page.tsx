@@ -6,6 +6,7 @@ import {
   Building2, Plus, Mail, Phone, MapPin, 
   Trash2, Pencil, X, Check, Search, ShieldAlert, CheckCircle2
 } from "lucide-react";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface Client {
   _id: string;
@@ -24,6 +25,14 @@ export default function ClientsDirectory() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    targetId: string;
+  }>({
+    isOpen: false,
+    targetId: ""
+  });
 
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -113,13 +122,19 @@ export default function ClientsDirectory() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this client?")) return;
+  const requestDelete = (id: string) => {
+    setModalState({ isOpen: true, targetId: id });
+  };
+
+  const executeDelete = async () => {
+    const { targetId } = modalState;
+    setModalState({ isOpen: false, targetId: "" });
+    
     const token = localStorage.getItem("token");
     if (!token) return;
 
     try {
-      const res = await fetch(`/api/clients/${id}`, {
+      const res = await fetch(`/api/clients/${targetId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -237,7 +252,7 @@ export default function ClientsDirectory() {
                   <Pencil size={14} /> Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(client._id)}
+                  onClick={() => requestDelete(client._id)}
                   className="bg-black text-white border-[2px] border-black p-2 shadow-[2px_2px_0_0_#000000] hover:bg-red-500 hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                   title="Delete Client"
                 >
@@ -363,6 +378,16 @@ export default function ClientsDirectory() {
           </>
         )}
       </AnimatePresence>
+
+      <ConfirmModal 
+        isOpen={modalState.isOpen}
+        title="Delete Client"
+        message="Are you sure you want to delete this client?"
+        onConfirm={executeDelete}
+        onCancel={() => setModalState({ isOpen: false, targetId: "" })}
+        isDestructive={true}
+        confirmText="Yes, Delete"
+      />
     </div>
   );
 }

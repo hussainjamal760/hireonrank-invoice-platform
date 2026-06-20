@@ -121,6 +121,45 @@ router.put(
 );
 
 /**
+ * GET /employee/me
+ * Retrieves the currently logged-in employee and their financial profile details.
+ */
+router.get(
+  '/me',
+  authenticateToken,
+  requireCompany,
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      const companyId = req.user!.currentCompanyId as string;
+      const email = req.user!.email.toLowerCase();
+
+      const employee = await Employee.findOne({ email, companyId });
+      if (!employee) {
+        return res.status(404).json({ message: 'Employee record not found for this user' });
+      }
+
+      let profile = await EmployeeProfile.findOne({ employeeId: employee._id });
+      if (!profile) {
+        profile = await EmployeeProfile.create({
+          employeeId: employee._id,
+          companyId,
+          baseSalary: employee.salary || 0,
+          currency: 'USD',
+          bonusThisMonth: 0,
+          deductionThisMonth: 0,
+          allowances: [],
+          taxRules: []
+        });
+      }
+
+      return res.status(200).json({ success: true, employee, profile });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
  * GET /employee/:id
  * Retrieves a single employee by ID and their financial profile details.
  */

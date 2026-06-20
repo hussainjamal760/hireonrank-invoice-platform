@@ -7,15 +7,14 @@ import {
   Home, Building2, Users, CreditCard, BarChart2, 
   FileText, Banknote, Ticket, ScrollText, Bell, 
   Settings, Menu, X, Command,
-  Zap
+  Zap, Activity
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/admin-dashboard", icon: Home },
+  { name: "Activity", href: "/admin-dashboard/activity", icon: Activity },
+  { name: "Companies", href: "/admin-dashboard/companies", icon: Building2 },
   { name: "Employees", href: "/admin-dashboard/employees", icon: Users },
-  { name: "Payroll", href: "/admin-dashboard/payroll", icon: Banknote },
-  { name: "Invoices", href: "/admin-dashboard/invoices", icon: FileText },
-  { name: "Team Invite", href: "/admin-dashboard/users", icon: Building2 },
   { name: "Settings", href: "/admin-dashboard/settings", icon: Settings },
 ];
 
@@ -60,7 +59,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push("/admin-dashboard/salary-slips");
         return;
       }
-    } else {
+    } else if (decoded && decoded.role !== 'ADMIN') {
       router.push("/accountant-dashboard");
       return;
     }

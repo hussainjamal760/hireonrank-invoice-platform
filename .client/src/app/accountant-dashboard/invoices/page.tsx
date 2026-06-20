@@ -70,25 +70,11 @@ export default function InvoicesTab() {
     if (!token || !companyId) return;
 
     try {
-      // Fetch Payroll Invoices
-      const resPayroll = await fetch(`/api/invoice/${companyId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const dataPayroll = await resPayroll.json();
-      
       // Fetch General Custom Invoices
       const resCustom = await fetch(`/api/invoices?limit=100`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const dataCustom = await resCustom.json();
-
-      const payrollInvoices = (dataPayroll.invoices || []).map((inv: any) => ({
-        ...inv,
-        type: 'PAYROLL',
-        displayClient: inv.employeeId?.name || "System Payroll",
-        displayAmount: inv.amount,
-        displayDate: inv.month
-      }));
 
       const customInvoices = (dataCustom.invoices || []).map((inv: any) => ({
         ...inv,
@@ -98,7 +84,7 @@ export default function InvoicesTab() {
         displayDate: new Date(inv.dueDate).toLocaleDateString()
       }));
 
-      setInvoices([...payrollInvoices, ...customInvoices].sort((a, b) => 
+      setInvoices(customInvoices.sort((a: any, b: any) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       ));
     } catch (err: any) {

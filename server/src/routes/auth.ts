@@ -23,7 +23,6 @@ const generateToken = (userId: string, email: string, currentCompanyId: string |
   );
 };
 
-// Helper to execute SaaS multi-company routing logic and return final state
 export const handlePostLoginRouting = async (user: any) => {
   let memberships = await UserCompany.find({ userId: user._id }).populate('companyId');
 
@@ -41,8 +40,24 @@ export const handlePostLoginRouting = async (user: any) => {
     };
   }
 
-  if (memberships.length === 1) {
-    const membership = memberships[0];
+  // Filter out banned companies
+  const activeMemberships = memberships.filter((m: any) => m.companyId && m.companyId.status !== 'BANNED');
+
+  if (activeMemberships.length === 0) {
+    return {
+      state: 'BANNED_STATE',
+      message: 'Your company has been banned by the administrator. Please contact support.',
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        profilePicture: user.profilePicture
+      }
+    };
+  }
+
+  if (activeMemberships.length === 1) {
+    const membership = activeMemberships[0];
     const company = membership.companyId as any;
     const token = generateToken(user._id.toString(), user.email, company._id.toString(), membership.role);
     return {
@@ -69,7 +84,7 @@ export const handlePostLoginRouting = async (user: any) => {
   return {
     state: 'MULTIPLE_COMPANIES_STATE',
     token,
-    companies: memberships.map((m: any) => ({
+    companies: activeMemberships.map((m: any) => ({
       id: m.companyId._id,
       name: m.companyId.name,
       logo: m.companyId.logo,

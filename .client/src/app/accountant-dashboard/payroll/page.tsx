@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Banknote, Calendar, ShieldAlert, CheckCircle2,
-  ListFilter, Play, ArrowUpRight, Award, Scissors, FileSpreadsheet
+  ListFilter, Play, ArrowUpRight, Award, Scissors, FileSpreadsheet,
+  Download, Check
 } from "lucide-react";
 
 interface PayrollRecord {
@@ -19,6 +20,8 @@ interface PayrollRecord {
   totalAllowances: number;
   totalTax: number;
   netSalary: number;
+  status: string;
+  currency?: string;
   createdAt: string;
 }
 
@@ -34,6 +37,18 @@ export default function PayrollTab() {
 
   // Filters
   const [filterMonth, setFilterMonth] = useState("ALL");
+
+  const getCurrencySymbol = (currencyCode: string) => {
+    switch(currencyCode?.toUpperCase()) {
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'INR': return '₹';
+      case 'PKR': return 'Rs ';
+      case 'AUD': return 'A$';
+      case 'CAD': return 'C$';
+      case 'USD': default: return '$';
+    }
+  };
 
   const decodeCompanyId = () => {
     const token = localStorage.getItem("token");
@@ -109,6 +124,64 @@ export default function PayrollTab() {
     } finally {
       setRunLoading(false);
     }
+  };
+
+  const handleDownload = async (record: PayrollRecord) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(`/api/payroll/${record._id}/download`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Download failed");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `SalarySlip-${record.month}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      setError(err.message || "Failed to download PDF");
+    }
+  };
+
+  const handleStatusUpdate = async (id: string, newStatus: string) => {
+    setError("");
+    setSuccess("");
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(`/api/payroll/${id}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || `Failed to update status to ${newStatus}`);
+
+      setSuccess(`Payroll marked as ${newStatus} successfully.`);
+      fetchPayrollHistory();
+    } catch (err: any) {
+      setError(err.message || "Failed to update payroll status");
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    if (!status) return 'bg-gray-200 text-black';
+    const s = status.toUpperCase();
+    if (s === 'PAID') return 'bg-emerald-400 text-black';
+    if (s === 'PROCESSED') return 'bg-blue-400 text-black';
+    if (s === 'PENDING') return 'bg-yellow-400 text-black';
+    return 'bg-gray-200 text-black';
   };
 
   // Extract unique periods for filter dropdown
@@ -240,7 +313,8 @@ export default function PayrollTab() {
                   <th className="p-4 border-r-[2px] border-black">Allowances</th>
                   <th className="p-4 border-r-[2px] border-black">Taxes</th>
                   <th className="p-4 border-r-[2px] border-black">Net Salary</th>
-                  <th className="p-4">Date Issued</th>
+                  <th className="p-4 border-r-[2px] border-black">Status</th>
+                  <th className="p-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y-[1px] divide-black font-mono text-sm">
@@ -253,20 +327,42 @@ export default function PayrollTab() {
                       </div>
                     </td>
                     <td className="p-4 border-r-[2px] border-black font-bold text-xs">{rec.month}</td>
-                    <td className="p-4 border-r-[2px] border-black">${rec.baseSalary?.toLocaleString()}</td>
+                    <td className="p-4 border-r-[2px] border-black">{getCurrencySymbol(rec.currency || 'USD')}{rec.baseSalary?.toLocaleString()}</td>
                     <td className="p-4 border-r-[2px] border-black text-emerald-600 font-bold flex items-center gap-1">
-                      <Award size={12} /> +${rec.totalAllowances?.toLocaleString()}
+                      <Award size={12} /> +{getCurrencySymbol(rec.currency || 'USD')}{rec.totalAllowances?.toLocaleString()}
                     </td>
                     <td className="p-4 border-r-[2px] border-black text-red-600 font-bold">
                       <div className="flex items-center gap-1">
-                        <Scissors size={12} /> -${rec.totalTax?.toLocaleString()}
+                        <Scissors size={12} /> -{getCurrencySymbol(rec.currency || 'USD')}{rec.totalTax?.toLocaleString()}
                       </div>
                     </td>
                     <td className="p-4 border-r-[2px] border-black bg-[#FACC15]/10 font-bold text-base text-black">
-                      ${rec.netSalary?.toLocaleString()}
+                      {getCurrencySymbol(rec.currency || 'USD')}{rec.netSalary?.toLocaleString()}
                     </td>
-                    <td className="p-4 text-xs font-bold text-black/60">
-                      {new Date(rec.createdAt).toLocaleDateString()}
+                    <td className="p-4 border-r-[2px] border-black font-bold">
+                      <span className={`border-[2px] border-black px-2 py-1 text-[10px] font-black uppercase shadow-[1px_1px_0_0_#000000] ${getStatusColor(rec.status)}`}>
+                        {rec.status || 'PROCESSED'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleDownload(rec)}
+                          className="bg-white text-black hover:bg-purple-400 border-[2px] border-black p-1.5 shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                          title="Download PDF"
+                        >
+                          <Download size={16} />
+                        </button>
+                        {rec.status && rec.status.toUpperCase() !== 'PAID' && (
+                          <button
+                            onClick={() => handleStatusUpdate(rec._id, 'PAID')}
+                            className="bg-black text-white hover:bg-emerald-400 hover:text-black border-[2px] border-black p-1.5 shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                            title="Mark as Paid"
+                          >
+                            <Check size={16} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

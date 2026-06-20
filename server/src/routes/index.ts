@@ -15,6 +15,7 @@ import invoiceTemplatesRouter from './invoiceTemplates';
 import publicRouter from './public';
 import clientsRouter from './clients';
 import aiInvoiceRouter from './aiInvoice';
+import adminRouter from './admin';
 
 const router = Router();
 
@@ -22,10 +23,8 @@ router.use('/auth', authRouter);
 router.use('/companies', companiesRouter);
 router.use('/employees', employeesRouter);
 router.use('/invoices', invoicesRouter);
-router.use('/invoices', invoicesRouter);
 router.use('/invoice', invoiceSingularRouter);
 router.use('/employee', employeeSingularRouter);
-router.use('/company', companySingularRouter);
 router.use('/company', companySingularRouter);
 router.use('/payroll', payrollRouter);
 router.use('/dashboard', dashboardRouter);
@@ -35,6 +34,7 @@ router.use('/invoice-templates', invoiceTemplatesRouter);
 router.use('/public', publicRouter);
 router.use('/clients', clientsRouter);
 router.use('/ai/invoice', aiInvoiceRouter);
+router.use('/admin', adminRouter);
 
 router.get('/health', (req, res) => {
   res.json({ status: 'ok' });

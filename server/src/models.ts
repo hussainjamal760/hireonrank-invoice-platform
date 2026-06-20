@@ -56,6 +56,7 @@ export interface ICompany extends Document {
   companyType?: string;
   employeesCount?: string;
   departments?: string[];
+  status: 'ACTIVE' | 'BANNED';
   createdAt: Date;
 }
 
@@ -72,6 +73,7 @@ const CompanySchema: Schema = new Schema({
   companyType: { type: String },
   employeesCount: { type: String },
   departments: { type: [String], default: [] },
+  status: { type: String, enum: ['ACTIVE', 'BANNED'], default: 'ACTIVE', required: true },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -233,6 +235,7 @@ export interface IInvoice extends Document {
   sentAt?: Date;
   publicLinkToken?: string;
   notes?: string;
+  currency: string;
   logoUrl?: string;
   customFields?: { name: string; value: string }[];
   employeeIds?: mongoose.Types.ObjectId[];
@@ -267,6 +270,7 @@ const InvoiceSchema: Schema = new Schema({
   sentAt: { type: Date },
   publicLinkToken: { type: String, unique: true, sparse: true },
   notes: { type: String },
+  currency: { type: String, default: 'USD' },
   logoUrl: { type: String },
   customFields: { type: [Schema.Types.Mixed], default: [] },
   employeeIds: [{ type: Schema.Types.ObjectId, ref: 'Employee' }],
