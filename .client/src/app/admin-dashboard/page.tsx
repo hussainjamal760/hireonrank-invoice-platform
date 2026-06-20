@@ -49,11 +49,11 @@ const activities = [
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#111] border-[3px] border-white p-4 shadow-[4px_4px_0_0_#FACC15]">
-        <p className="text-white font-label-caps text-xs uppercase mb-3 tracking-widest border-b-[2px] border-white pb-2">{label}</p>
+      <div className="bg-white border-[3px] border-black p-4 shadow-[4px_4px_0_0_#FACC15]">
+        <p className="text-black font-label-caps text-xs uppercase mb-3 tracking-widest border-b-[2px] border-black pb-2">{label}</p>
         {payload.map((entry: any, index: number) => (
-          <p key={index} className="font-display-md text-lg text-white flex items-center gap-2">
-            <span className="w-3 h-3 border-[2px] border-white" style={{ backgroundColor: entry.color || '#FACC15' }}></span>
+          <p key={index} className="font-display-md text-lg text-black flex items-center gap-2">
+            <span className="w-3 h-3 border-[2px] border-black" style={{ backgroundColor: entry.color || '#FACC15' }}></span>
             {entry.name}: <span className="font-black">{entry.value}</span>
           </p>
         ))}
@@ -68,20 +68,20 @@ const KpiCard = ({ title, value, trend, icon: Icon, delay, isPositive = true }: 
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.4, delay }}
-    className="bg-[#111] border-[3px] border-white p-6 shadow-[4px_4px_0_0_#FACC15] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all group cursor-pointer"
+    className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all group cursor-pointer"
   >
     <div className="flex justify-between items-start mb-6">
-      <div className="w-12 h-12 bg-white border-[2px] border-black flex items-center justify-center text-black group-hover:bg-[#FACC15] transition-colors">
+      <div className="w-12 h-12 bg-white border-[2px] border-black flex items-center justify-center text-black group-hover:bg-[#FACC15] transition-colors shadow-[2px_2px_0_0_#000000]">
         <Icon size={24} strokeWidth={2.5} />
       </div>
-      <div className={`flex items-center gap-1.5 px-2 py-1 border-[2px] border-white font-bold text-xs ${isPositive ? 'bg-emerald-500 text-black border-black' : 'bg-red-500 text-black border-black'}`}>
+      <div className={`flex items-center gap-1.5 px-2 py-1 border-[2px] border-black font-bold text-xs shadow-[2px_2px_0_0_#000000] ${isPositive ? 'bg-emerald-400 text-black' : 'bg-red-400 text-black'}`}>
         {isPositive ? <TrendingUp size={16} strokeWidth={3} /> : <TrendingDown size={16} strokeWidth={3} />}
         {trend}
       </div>
     </div>
     <div>
-      <h3 className="text-white/70 font-label-caps uppercase text-xs tracking-widest mb-2">{title}</h3>
-      <div className="font-display-lg text-4xl text-white font-black tracking-tight">{value}</div>
+      <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-2 font-bold">{title}</h3>
+      <div className="font-display-lg text-4xl text-black font-black tracking-tight">{value}</div>
     </div>
   </motion.div>
 );
@@ -94,18 +94,18 @@ export default function AdminDashboard() {
       <motion.div 
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b-[4px] border-white pb-6"
+        className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b-[4px] border-black pb-6"
       >
         <div>
-          <div className="flex items-center gap-3 mb-3 bg-[#111] border-[2px] border-white inline-flex px-3 py-1 shadow-[2px_2px_0_0_#FACC15]">
+          <div className="flex items-center gap-3 mb-3 bg-white border-[2px] border-black inline-flex px-3 py-1 shadow-[2px_2px_0_0_#FACC15]">
             <span className="w-3 h-3 bg-emerald-400 border-[2px] border-black animate-pulse"></span>
-            <span className="text-white font-label-caps text-xs tracking-widest uppercase font-black">System Online</span>
+            <span className="text-black font-label-caps text-xs tracking-widest uppercase font-black">System Online</span>
           </div>
-          <h1 className="font-display-lg text-5xl md:text-6xl text-white uppercase font-black tracking-tighter">Command Center</h1>
+          <h1 className="font-display-lg text-5xl md:text-6xl text-black uppercase font-black tracking-tighter">Command Center</h1>
         </div>
         <div className="flex items-center gap-4">
-          <button className="text-white font-label-caps text-xs tracking-widest uppercase font-bold hover:underline underline-offset-4 decoration-[2px]">Generate Report</button>
-          <button className="bg-white text-black border-[3px] border-black px-6 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-[#FACC15] transition-colors shadow-[4px_4px_0_0_#ffffff]">
+          <button className="text-black font-label-caps text-xs tracking-widest uppercase font-bold hover:underline underline-offset-4 decoration-[2px]">Generate Report</button>
+          <button className="bg-black text-white border-[3px] border-black px-6 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-[#FACC15] hover:text-black transition-colors shadow-[4px_4px_0_0_#000000]">
             Export Data
           </button>
         </div>
@@ -132,20 +132,20 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-[#111] border-[3px] border-white p-6 shadow-[6px_6px_0_0_#ffffff]"
+            className="bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000]"
           >
-            <div className="flex justify-between items-center mb-8 border-b-[3px] border-white pb-4">
-              <h2 className="text-white font-display-md text-2xl uppercase font-black tracking-tight">Revenue Trajectory</h2>
-              <button className="bg-[#FACC15] text-black border-[2px] border-white p-2 shadow-[2px_2px_0_0_#ffffff] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"><ChevronRight size={20} strokeWidth={3} /></button>
+            <div className="flex justify-between items-center mb-8 border-b-[3px] border-black pb-4">
+              <h2 className="text-black font-display-md text-2xl uppercase font-black tracking-tight">Revenue Trajectory</h2>
+              <button className="bg-[#FACC15] text-black border-[2px] border-black p-2 shadow-[2px_2px_0_0_#000000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"><ChevronRight size={20} strokeWidth={3} /></button>
             </div>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" opacity={0.1} vertical={false} />
-                  <XAxis dataKey="name" axisLine={{ stroke: '#fff', strokeWidth: 2 }} tickLine={{ stroke: '#fff', strokeWidth: 2 }} tick={{ fill: '#fff', fontSize: 12, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} dy={10} />
-                  <YAxis axisLine={{ stroke: '#fff', strokeWidth: 2 }} tickLine={{ stroke: '#fff', strokeWidth: 2 }} tick={{ fill: '#fff', fontSize: 12, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-                  <Bar dataKey="revenue" name="Revenue (M)" fill="#FACC15" stroke="#fff" strokeWidth={2} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#000000" opacity={0.1} vertical={false} />
+                  <XAxis dataKey="name" axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={{ stroke: '#000', strokeWidth: 2 }} tick={{ fill: '#000', fontSize: 12, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} dy={10} />
+                  <YAxis axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={{ stroke: '#000', strokeWidth: 2 }} tick={{ fill: '#000', fontSize: 12, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                  <Bar dataKey="revenue" name="Revenue (M)" fill="#FACC15" stroke="#000" strokeWidth={2} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -158,15 +158,15 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="bg-[#111] border-[3px] border-white p-6 shadow-[4px_4px_0_0_#FACC15]"
+              className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15]"
             >
-              <h2 className="text-white font-display-md text-lg uppercase font-black tracking-tight mb-6 border-b-[2px] border-white pb-2">Company Growth</h2>
+              <h2 className="text-black font-display-md text-lg uppercase font-black tracking-tight mb-6 border-b-[2px] border-black pb-2">Company Growth</h2>
               <div className="h-[180px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={growthData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" opacity={0.1} vertical={false} />
-                    <XAxis dataKey="name" axisLine={{ stroke: '#fff', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#fff', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} dy={10} />
-                    <YAxis axisLine={{ stroke: '#fff', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#fff', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#000000" opacity={0.1} vertical={false} />
+                    <XAxis dataKey="name" axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#000', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} dy={10} />
+                    <YAxis axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#000', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} />
                     <Tooltip content={<CustomTooltip />} />
                     <Area type="step" dataKey="companies" name="Companies" stroke="#3b82f6" strokeWidth={4} fillOpacity={1} fill="#3b82f6" />
                   </AreaChart>
@@ -179,18 +179,18 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="bg-[#111] border-[3px] border-white p-6 shadow-[4px_4px_0_0_#FACC15]"
+              className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15]"
             >
-              <h2 className="text-white font-display-md text-lg uppercase font-black tracking-tight mb-6 border-b-[2px] border-white pb-2">Invoice Volume</h2>
+              <h2 className="text-black font-display-md text-lg uppercase font-black tracking-tight mb-6 border-b-[2px] border-black pb-2">Invoice Volume</h2>
               <div className="h-[180px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={invoiceData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" opacity={0.1} vertical={false} />
-                    <XAxis dataKey="name" axisLine={{ stroke: '#fff', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#fff', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} dy={10} />
-                    <YAxis axisLine={{ stroke: '#fff', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#fff', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#000000" opacity={0.1} vertical={false} />
+                    <XAxis dataKey="name" axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#000', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} dy={10} />
+                    <YAxis axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#000', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="sent" name="Sent" stroke="#fff" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#111', stroke: '#fff' }} />
-                    <Line type="monotone" dataKey="paid" name="Paid" stroke="#10B981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#111', stroke: '#10B981' }} />
+                    <Line type="monotone" dataKey="sent" name="Sent" stroke="#000" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#000' }} />
+                    <Line type="monotone" dataKey="paid" name="Paid" stroke="#10B981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#10B981' }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -203,11 +203,11 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.7 }}
-          className="bg-[#111] border-[3px] border-white p-6 flex flex-col h-full shadow-[6px_6px_0_0_#ffffff]"
+          className="bg-white border-[3px] border-black p-6 flex flex-col h-full shadow-[6px_6px_0_0_#000000]"
         >
-          <div className="flex items-center justify-between border-b-[3px] border-white pb-4 mb-6">
-            <h2 className="text-white font-display-md text-2xl uppercase font-black tracking-tight">Live Events</h2>
-            <div className="w-10 h-10 border-[2px] border-white bg-white flex items-center justify-center text-black shadow-[2px_2px_0_0_#FACC15]">
+          <div className="flex items-center justify-between border-b-[3px] border-black pb-4 mb-6">
+            <h2 className="text-black font-display-md text-2xl uppercase font-black tracking-tight">Live Events</h2>
+            <div className="w-10 h-10 border-[2px] border-black bg-[#FACC15] flex items-center justify-center text-black shadow-[2px_2px_0_0_#000000]">
               <Clock size={20} strokeWidth={2.5} />
             </div>
           </div>
@@ -218,23 +218,23 @@ export default function AdminDashboard() {
               return (
                 <div key={i} className="flex gap-4 group cursor-pointer">
                   <div className="relative flex flex-col items-center">
-                    <div className={`w-12 h-12 border-[2px] border-white flex items-center justify-center shrink-0 z-10 ${activity.bg} ${activity.color} shadow-[2px_2px_0_0_#ffffff] group-hover:translate-x-[2px] group-hover:translate-y-[2px] group-hover:shadow-none transition-all`}>
+                    <div className={`w-12 h-12 border-[2px] border-black flex items-center justify-center shrink-0 z-10 ${activity.bg} ${activity.color} shadow-[2px_2px_0_0_#000000] group-hover:translate-x-[2px] group-hover:translate-y-[2px] group-hover:shadow-none transition-all`}>
                       <Icon size={20} strokeWidth={2.5} />
                     </div>
                     {i !== activities.length - 1 && (
-                      <div className="absolute top-12 bottom-[-24px] w-[3px] bg-white"></div>
+                      <div className="absolute top-12 bottom-[-24px] w-[3px] bg-black"></div>
                     )}
                   </div>
                   <div className="flex flex-col pt-1">
-                    <span className="text-white/60 font-label-caps text-xs uppercase font-bold tracking-widest mb-1">{activity.time}</span>
-                    <span className="text-white font-body-md text-sm font-bold leading-snug group-hover:underline decoration-[2px] underline-offset-2">{activity.text}</span>
+                    <span className="text-black/60 font-label-caps text-xs uppercase font-bold tracking-widest mb-1">{activity.time}</span>
+                    <span className="text-black font-body-md text-sm font-bold leading-snug group-hover:underline decoration-[2px] underline-offset-2">{activity.text}</span>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <button className="w-full mt-6 bg-white border-[3px] border-black py-3 text-sm font-label-caps uppercase font-black tracking-widest text-black hover:bg-[#FACC15] shadow-[4px_4px_0_0_#FACC15] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all">
+          <button className="w-full mt-6 bg-white border-[3px] border-black py-3 text-sm font-label-caps uppercase font-black tracking-widest text-black hover:bg-[#FACC15] shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all">
             View All Logs
           </button>
         </motion.div>

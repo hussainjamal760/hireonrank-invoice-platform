@@ -29,12 +29,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   return (
-    <div className="flex h-screen bg-[#050505] text-white selection:bg-[#FACC15] selection:text-black overflow-hidden font-body-md">
+    <div className="flex h-screen bg-white text-black selection:bg-[#FACC15] selection:text-black overflow-hidden font-body-md">
       
       {/* Sidebar - Sleek Ultra-Premium Glassmorphism (No Brutalism) */}
       <aside
         className={`
-          relative h-full bg-white/[0.02] border-r border-white/[0.05] flex flex-col z-20 shrink-0 backdrop-blur-xl
+          relative h-full bg-[#050505] text-white border-r border-white/[0.05] flex flex-col z-20 shrink-0
+
           transition-all duration-300 ease-in-out
           ${isSidebarOpen ? "w-[260px]" : "w-[80px]"}
         `}
@@ -107,7 +108,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative">
+      <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative bg-white">
         <div className="absolute inset-0 pattern-grid opacity-10 pointer-events-none fixed"></div>
         <div className="relative z-10 p-6 sm:p-8 lg:p-12">
           {children}
