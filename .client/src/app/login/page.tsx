@@ -1,12 +1,23 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, useAnimation } from "framer-motion";
-import { Zap, ArrowRight, FileText, CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Zap, ArrowRight, FileText, CheckCircle2, ShieldAlert } from "lucide-react";
 
 export default function Login() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  // Form State
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [devOtp, setDevOtp] = useState("");
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -23,6 +34,141 @@ export default function Login() {
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
+
+  // Google OAuth Initialization (Safe Single-Init Guard)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('token')) {
+      router.push('/admin-dashboard');
+      return;
+    }
+
+    const loadGoogleScript = () => {
+      // Check if already loaded and initialized
+      if ((window as any).googleAuthInitialized) return;
+
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        if ((window as any).google && !(window as any).googleAuthInitialized) {
+          try {
+            (window as any).google.accounts.id.initialize({
+              client_id: "your-google-client-id",
+              callback: handleGoogleLoginResponse,
+            });
+            (window as any).googleAuthInitialized = true;
+            (window as any).google.accounts.id.renderButton(
+              document.getElementById("google-signin-btn"),
+              { theme: "outline", size: "large", width: 400 }
+            );
+          } catch (e) {
+            console.warn("Google initialization skipped/already initialized", e);
+          }
+        }
+      };
+      document.body.appendChild(script);
+    };
+
+    loadGoogleScript();
+  }, [router]);
+
+  const handleApiResponse = async (res: Response) => {
+    const contentType = res.headers.get("content-type");
+    let data: any = {};
+    
+    if (contentType && contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      if (res.status === 502 || res.status === 504 || text.includes("Internal Server Error") || text.includes("Bad Gateway")) {
+        throw new Error("Could not connect to the backend server. Please verify the backend is running on port 5000.");
+      }
+      throw new Error(text || `Server returned status ${res.status}`);
+    }
+
+    if (!res.ok) {
+      throw new Error(data.message || `Server returned error ${res.status}`);
+    }
+
+    return data;
+  };
+
+  const handleGoogleLoginResponse = async (response: any) => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/auth/google-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: response.credential }),
+      });
+
+      const data = await handleApiResponse(res);
+      localStorage.setItem("token", data.token);
+      router.push("/admin-dashboard");
+    } catch (err: any) {
+      setError(err.message || "Failed to log in with Google");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Submit email to send OTP
+  const handleSendOtp = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (!email) return setError("Please enter your email first");
+
+    setOtpSending(true);
+    setError("");
+    setSuccessMsg("");
+    setDevOtp("");
+
+    try {
+      const res = await fetch(`/api/auth/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await handleApiResponse(res);
+      setSuccessMsg("Verification code sent to your email!");
+      if (data.otp) {
+        setDevOtp(data.otp);
+      }
+    } catch (err: any) {
+      setError(err.message || "Something went wrong sending verification code.");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  // Submit OTP to verify and login
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return setError("Please enter your email");
+    if (!otp) return setError("Please enter the verification code");
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+
+      const data = await handleApiResponse(res);
+      // Save token and navigate
+      localStorage.setItem("token", data.token);
+      router.push("/admin-dashboard");
+    } catch (err: any) {
+      setError(err.message || "OTP verification failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background overflow-hidden">
@@ -48,38 +194,83 @@ export default function Login() {
             </p>
           </motion.div>
 
+          {error && (
+            <div className="bg-[#FFE5E5] text-[#D32F2F] border-[3px] border-[#D32F2F] p-4 font-bold flex items-center gap-3">
+              <ShieldAlert size={20} className="flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="bg-[#E5F6E5] text-[#008A00] border-[3px] border-[#008A00] p-4 font-bold flex items-center gap-3">
+              <CheckCircle2 size={20} className="flex-shrink-0" />
+              <span>{successMsg}</span>
+            </div>
+          )}
+
+          {/* Dev OTP Box */}
+          {devOtp && (
+            <div className="bg-primary-container border-[3px] border-on-background p-4 neo-brutal-shadow">
+              <p className="font-bold text-sm uppercase">🔧 Development Mode Sandbox OTP</p>
+              <p className="font-display-lg text-3xl font-black mt-2 tracking-widest text-center">{devOtp}</p>
+            </div>
+          )}
+
           <motion.form 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col gap-6" 
-            onSubmit={(e) => e.preventDefault()}
+            onSubmit={handleLoginSubmit}
           >
             <div className="flex flex-col gap-2">
               <label className="font-label-caps uppercase text-on-background">Work Email</label>
               <input
                 type="email"
                 placeholder="name@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
                 className="w-full bg-surface-container-low text-on-background border-[3px] border-on-background px-4 py-4 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all"
               />
             </div>
             
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
-                <label className="font-label-caps uppercase text-on-background">Password</label>
-                <Link href="#" className="font-label-caps uppercase text-primary hover:underline underline-offset-4">Reset?</Link>
+                <label className="font-label-caps uppercase text-on-background">Verification Code (OTP)</label>
+                <button 
+                  type="button" 
+                  onClick={handleSendOtp}
+                  disabled={otpSending}
+                  className="font-label-caps uppercase text-primary hover:underline underline-offset-4 cursor-pointer font-bold"
+                >
+                  {otpSending ? "Sending..." : "Get Code?"}
+                </button>
               </div>
               <input
-                type="password"
-                placeholder="••••••••"
+                type="text"
+                placeholder="000000"
+                maxLength={6}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                required
                 className="w-full bg-surface-container-low text-on-background border-[3px] border-on-background px-4 py-4 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all"
               />
             </div>
 
-            <button type="submit" className="w-full bg-on-background text-primary-container py-5 font-label-caps text-lg border-[4px] border-on-background neo-brutal-shadow-lg hover:neo-brutal-shadow-active hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase font-black flex items-center justify-center gap-3 mt-4">
-              Enter Terminal <ArrowRight size={24} />
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-on-background text-primary-container py-5 font-label-caps text-lg border-[4px] border-on-background neo-brutal-shadow-lg hover:neo-brutal-shadow-active hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase font-black flex items-center justify-center gap-3 mt-4"
+            >
+              {loading ? "Entering..." : "Enter Terminal"} <ArrowRight size={24} />
             </button>
           </motion.form>
+
+          {/* Social Sign-in section */}
+          <div className="mt-2 flex flex-col items-center gap-4">
+            <div id="google-signin-btn" className="w-full flex justify-center"></div>
+          </div>
 
           <motion.div 
             initial={{ opacity: 0 }}

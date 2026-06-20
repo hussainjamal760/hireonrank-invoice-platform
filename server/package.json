@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,6 +18,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.0.0",
+    "@types/nodemailer": "^8.0.1",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.17",
     "tsx": "^4.22.4",
@@ -25,8 +29,10 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
+    "googleapis": "^173.0.0",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.7.1"
+    "mongoose": "^9.7.1",
+    "nodemailer": "^9.0.1"
   }
 }

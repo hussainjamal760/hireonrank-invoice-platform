@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   Home, Building2, Users, CreditCard, BarChart2, 
   FileText, Banknote, Ticket, ScrollText, Bell, 
@@ -27,6 +27,33 @@ const NAV_ITEMS = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const pathname = usePathname();
+  const router = useRouter();
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+    } else {
+      setAuthorized(true);
+    }
+  }, [router]);
+
+  const handleExit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    localStorage.removeItem("token");
+    router.push("/login");
+  };
+
+  if (!authorized) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <span className="font-display-lg text-lg uppercase tracking-widest text-[#FACC15] animate-pulse">
+          Authenticating...
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-white text-black selection:bg-[#FACC15] selection:text-black overflow-hidden font-body-md">
@@ -96,14 +123,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         
         <div className="p-4 border-t border-white/[0.05] shrink-0">
-          <Link href="/" className="flex items-center gap-4 px-3 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all overflow-hidden group">
+          <button 
+            onClick={handleExit}
+            className="w-full flex items-center gap-4 px-3 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all overflow-hidden group cursor-pointer text-left bg-transparent border-0 outline-none"
+          >
             <div className="shrink-0 flex items-center justify-center w-6 h-6 group-hover:scale-110 transition-transform">
               <X size={22} strokeWidth={2.5} />
             </div>
             <span className={`font-label-caps uppercase font-bold text-xs tracking-wider transition-opacity duration-300 whitespace-nowrap ${isSidebarOpen ? "opacity-100" : "opacity-0"}`}>
               Exit System
             </span>
-          </Link>
+          </button>
         </div>
       </aside>
 
