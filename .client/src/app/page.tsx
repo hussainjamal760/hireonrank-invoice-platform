@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, CheckCircle2, Check, Star, Shield, Zap, FileText, Users, DollarSign, LayoutTemplate, Briefcase, FileSignature, PieChart, Menu, X, ArrowRight, ArrowDown } from "lucide-react";
-
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
     initial={{ opacity: 0, y: 40 }}
@@ -68,50 +69,7 @@ export default function Home() {
 
   return (
     <>
-      <nav className="sticky top-0 w-full z-50 bg-background border-b-[3px] border-on-background flex justify-between items-center px-margin-desktop py-4">
-        <div className="font-headline-md text-headline-md font-black italic text-on-background flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary-container border-[3px] border-on-background flex items-center justify-center">
-            <Zap size={20} className="text-on-background" />
-          </div>
-          Voicy
-        </div>
-        <div className="hidden md:flex gap-8">
-          <Link className="font-body-md text-body-md uppercase font-bold tracking-tighter text-on-background hover:text-primary transition-colors duration-200" href="#">Platform</Link>
-          <Link className="font-body-md text-body-md uppercase font-bold tracking-tighter text-on-background hover:text-primary transition-colors duration-200" href="#">Design</Link>
-          <Link className="font-body-md text-body-md uppercase font-bold tracking-tighter text-on-background hover:text-primary transition-colors duration-200" href="#">Payroll</Link>
-          <Link className="font-body-md text-body-md uppercase font-bold tracking-tighter text-on-background hover:text-primary transition-colors duration-200" href="#">Pricing</Link>
-        </div>
-        <div className="hidden md:flex gap-4 items-center">
-          <Link className="font-body-md uppercase font-bold tracking-tighter text-on-background hover:text-primary transition-colors" href="/login">Log in</Link>
-          <button className="bg-primary-container text-on-primary-container px-6 py-2 font-label-caps text-label-caps border-[3px] border-on-background neo-brutal-shadow hover:neo-brutal-shadow-active hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
-            Start Free
-          </button>
-        </div>
-        <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-          {isMenuOpen ? <X size={32} /> : <Menu size={32} />}
-        </button>
-      </nav>
-
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="md:hidden border-b-[3px] border-on-background bg-surface-container overflow-hidden"
-          >
-            <div className="flex flex-col p-6 gap-6">
-              <Link className="font-headline-md text-2xl uppercase font-black" href="#">Platform</Link>
-              <Link className="font-headline-md text-2xl uppercase font-black" href="#">Design</Link>
-              <Link className="font-headline-md text-2xl uppercase font-black" href="#">Payroll</Link>
-              <Link className="font-headline-md text-2xl uppercase font-black" href="#">Pricing</Link>
-              <button className="bg-primary-container text-on-background w-full py-4 font-label-caps text-lg border-[3px] border-on-background neo-brutal-shadow uppercase font-black">
-                Start Free
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Navbar />
 
       <main>
         <section className="min-h-[90vh] flex flex-col lg:flex-row items-center border-b-[3px] border-on-background overflow-hidden relative bg-surface-container-low">
@@ -735,53 +693,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="w-full bg-background flex flex-col px-margin-desktop py-16 gap-16">
-        <div className="flex flex-col lg:flex-row justify-between gap-16">
-          <div className="lg:w-1/3 flex flex-col gap-6">
-            <div className="font-headline-lg text-5xl font-black text-on-background flex items-center gap-2">
-              <div className="w-12 h-12 bg-primary-container border-[4px] border-on-background flex items-center justify-center">
-                <Zap size={28} className="text-on-background" />
-              </div>
-              Voicy
-            </div>
-            <p className="font-body-md text-on-surface-variant font-bold max-w-sm">
-              Invoicing and payroll, built for the businesses that outgrew spreadsheets but aren't ready for enterprise software.
-            </p>
-          </div>
-          
-          <div className="lg:w-2/3 flex flex-wrap justify-between gap-10 lg:gap-20">
-            <div className="flex flex-col gap-6">
-              <h4 className="font-label-caps uppercase text-on-surface-variant">Product</h4>
-              <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Invoicing</Link>
-              <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Invoice designer</Link>
-              <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Payroll</Link>
-              <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Pricing</Link>
-            </div>
-            <div className="flex flex-col gap-6">
-              <h4 className="font-label-caps uppercase text-on-surface-variant">Company</h4>
-              <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">About</Link>
-              <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Careers</Link>
-              <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Contact</Link>
-            </div>
-            <div className="flex flex-col gap-6">
-              <h4 className="font-label-caps uppercase text-on-surface-variant">Resources</h4>
-              <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Help center</Link>
-              <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">API docs</Link>
-              <Link className="font-body-md font-bold uppercase hover:text-primary transition-colors" href="#">Security</Link>
-            </div>
-          </div>
-        </div>
-        
-        <div className="border-t-[3px] border-on-background pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="font-label-caps text-on-surface-variant uppercase font-bold">
-            © 2026 Voicy. Built for precision.
-          </div>
-          <div className="flex gap-6">
-            <Link className="font-label-caps uppercase text-on-surface-variant hover:text-primary transition-colors font-bold" href="#">Terms</Link>
-            <Link className="font-label-caps uppercase text-on-surface-variant hover:text-primary transition-colors font-bold" href="#">Privacy</Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }
