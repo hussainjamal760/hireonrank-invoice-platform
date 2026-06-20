@@ -8,6 +8,22 @@ import dynamic from "next/dynamic";
 
 const DynamicMap = dynamic(() => import("../../components/Map"), { ssr: false });
 
+function decodeToken(token: string) {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
+
 export default function SetupCompany() {
   const router = useRouter();
 
@@ -18,6 +34,32 @@ export default function SetupCompany() {
   const [employeesCount, setEmployeesCount] = useState("");
   const [location, setLocation] = useState({ lat: 0, lng: 0 });
   const [logo, setLogo] = useState<string>("");
+
+  // Load existing company details if a company is already created (e.g. from create-company stage)
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const decoded = decodeToken(token);
+      if (decoded && decoded.currentCompanyId) {
+        fetch("/api/companies/my", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data && data.companies) {
+              const currentCompany = data.companies.find((c: any) => c.id === decoded.currentCompanyId);
+              if (currentCompany) {
+                setName(currentCompany.name || "");
+                setLogo(currentCompany.logo || "");
+              }
+            }
+          })
+          .catch((err) => console.error("Failed to fetch current company details:", err));
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -85,14 +127,35 @@ export default function SetupCompany() {
     setError("");
 
     try {
-      const token = localStorage.getItem("token");
+      let token = localStorage.getItem("token");
       if (!token) throw new Error("Authentication missing");
 
+      // 1. Decode token to check if currentCompanyId is present
+      const decoded = decodeToken(token);
+      let activeToken = token;
+
+      // 2. If no company context is selected, create the company first
+      if (!decoded || !decoded.currentCompanyId) {
+        const createRes = await fetch(`/api/companies`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ name, logo }),
+        });
+
+        const createData = await handleApiResponse(createRes);
+        activeToken = createData.token;
+        localStorage.setItem("token", activeToken);
+      }
+
+      // 3. Update the company details using the PUT endpoint with the activeToken
       const res = await fetch(`/api/companies/setup`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          "Authorization": `Bearer ${activeToken}`
         },
         body: JSON.stringify({ 
           name, 
