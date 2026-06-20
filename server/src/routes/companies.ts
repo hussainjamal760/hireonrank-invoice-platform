@@ -131,7 +131,7 @@ router.post(
   '/invite',
   authenticateToken,
   requireCompany,
-  requireRole(['OWNER', 'ADMIN']),
+  requireRole(['OWNER', 'ADMIN', 'ACCOUNTANT']),
   async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
     try {
       if (!req.user || !req.user.currentCompanyId) {
@@ -179,6 +179,75 @@ router.post(
         success: true,
         message: 'Invitation sent successfully',
         token 
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post(
+  '/invite/batch',
+  authenticateToken,
+  requireCompany,
+  requireRole(['OWNER', 'ADMIN', 'ACCOUNTANT']),
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      if (!req.user || !req.user.currentCompanyId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const { emails, role } = req.body;
+      if (!emails || !Array.isArray(emails) || !role) {
+        return res.status(400).json({ message: 'Emails array and role are required' });
+      }
+
+      if (!['OWNER', 'ADMIN', 'EMPLOYEE', 'ACCOUNTANT'].includes(role)) {
+        return res.status(400).json({ message: 'Invalid role' });
+      }
+
+      const company = await Company.findById(req.user.currentCompanyId);
+      const companyName = company ? company.name : 'Our Company';
+
+      const results = {
+        successful: [] as string[],
+        failed: [] as { email: string; reason: string }[]
+      };
+
+      await Promise.all(emails.map(async (email) => {
+        const cleanEmail = email.trim().toLowerCase();
+        try {
+          const existingUser = await User.findOne({ email: cleanEmail });
+          if (existingUser) {
+            const membership = await UserCompany.findOne({
+              userId: existingUser._id,
+              companyId: req.user!.currentCompanyId
+            });
+            if (membership) {
+              results.failed.push({ email: cleanEmail, reason: 'Already a member' });
+              return;
+            }
+          }
+
+          const token = crypto.randomBytes(32).toString('hex');
+
+          await Invitation.findOneAndUpdate(
+            { companyId: req.user!.currentCompanyId, email: cleanEmail },
+            { role, token, status: 'PENDING', createdAt: new Date() },
+            { upsert: true }
+          );
+
+          await sendInvitationEmail(cleanEmail, companyName, token, role);
+          results.successful.push(cleanEmail);
+        } catch (e: any) {
+          results.failed.push({ email: cleanEmail, reason: e.message || 'Error processing invitation' });
+        }
+      }));
+
+      return res.status(200).json({
+        success: true,
+        message: `Processed ${emails.length} invitations`,
+        results
       });
     } catch (err) {
       next(err);
