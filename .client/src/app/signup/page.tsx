@@ -41,7 +41,7 @@ export default function Signup() {
   // Google OAuth Initialization (Safe Single-Init Guard)
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('token')) {
-      router.push('/dashboard');
+      router.push('/admin-dashboard');
       return;
     }
 
@@ -108,7 +108,7 @@ export default function Signup() {
 
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
-      router.push("/dashboard");
+      router.push("/admin-dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to sign up with Google");
     } finally {
@@ -166,7 +166,7 @@ export default function Signup() {
 
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
-      router.push("/dashboard");
+      router.push("/admin-dashboard");
     } catch (err: any) {
       setError(err.message || "Signup verification failed");
     } finally {

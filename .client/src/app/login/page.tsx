@@ -38,7 +38,7 @@ export default function Login() {
   // Google OAuth Initialization (Safe Single-Init Guard)
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('token')) {
-      router.push('/dashboard');
+      router.push('/admin-dashboard');
       return;
     }
 
@@ -106,7 +106,7 @@ export default function Login() {
 
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
-      router.push("/dashboard");
+      router.push("/admin-dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to log in with Google");
     } finally {
@@ -162,7 +162,7 @@ export default function Login() {
       const data = await handleApiResponse(res);
       // Save token and navigate
       localStorage.setItem("token", data.token);
-      router.push("/dashboard");
+      router.push("/admin-dashboard");
     } catch (err: any) {
       setError(err.message || "OTP verification failed");
     } finally {
