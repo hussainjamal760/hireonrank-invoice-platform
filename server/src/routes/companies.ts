@@ -274,13 +274,43 @@ router.post(
   }
 );
 
+router.get('/invite-info/:token', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const { token } = req.params;
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+    }
+
+    const invitation = await Invitation.findOne({ token, status: 'PENDING' });
+    if (!invitation) {
+      return res.status(404).json({ message: 'Invalid or expired invitation token' });
+    }
+
+    const company = await Company.findById(invitation.companyId);
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      company: {
+        name: company.name,
+        logo: company.logo,
+        departments: company.departments || []
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/join', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { token } = req.body;
+    const { token, department } = req.body;
     if (!token) {
       return res.status(400).json({ message: 'Invitation token is required' });
     }
@@ -367,10 +397,15 @@ router.post('/join', authenticateToken, async (req: AuthRequest, res: Response, 
         email: req.user.email,
         salary: 0,
         designation: invitation.role,
+        department: department || undefined,
         status: 'ACTIVE'
       });
     } else if (!employeeRecord.userId) {
       employeeRecord.userId = req.user.userId as any;
+      if (department) employeeRecord.department = department;
+      await employeeRecord.save();
+    } else if (department && !employeeRecord.department) {
+      employeeRecord.department = department;
       await employeeRecord.save();
     }
 
@@ -413,7 +448,7 @@ router.put(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const { name, address, country, location, companyType, employeesCount, logo } = req.body;
+      const { name, address, country, location, companyType, employeesCount, logo, departments } = req.body;
 
       const company = await Company.findById(req.user.currentCompanyId);
       if (!company) {
@@ -426,6 +461,7 @@ router.put(
       if (location !== undefined) company.location = location;
       if (companyType !== undefined) company.companyType = companyType;
       if (employeesCount !== undefined) company.employeesCount = employeesCount;
+      if (departments !== undefined) company.departments = departments;
 
       if (logo && typeof logo === 'string' && logo.startsWith('data:image')) {
         try {
@@ -451,7 +487,8 @@ router.put(
           country: company.country,
           location: company.location,
           companyType: company.companyType,
-          employeesCount: company.employeesCount
+          employeesCount: company.employeesCount,
+          departments: company.departments
         }
       });
     } catch (err) {

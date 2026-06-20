@@ -34,6 +34,25 @@ export default function SetupCompany() {
   const [employeesCount, setEmployeesCount] = useState("");
   const [location, setLocation] = useState({ lat: 0, lng: 0 });
   const [logo, setLogo] = useState<string>("");
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [customDepartment, setCustomDepartment] = useState("");
+
+  const commonDepartments = ["Sales", "HR", "IT", "Marketing", "Finance", "Operations"];
+
+  const toggleDepartment = (dept: string) => {
+    if (departments.includes(dept)) {
+      setDepartments(departments.filter(d => d !== dept));
+    } else {
+      setDepartments([...departments, dept]);
+    }
+  };
+
+  const addCustomDepartment = () => {
+    if (customDepartment.trim() && !departments.includes(customDepartment.trim())) {
+      setDepartments([...departments, customDepartment.trim()]);
+      setCustomDepartment("");
+    }
+  };
 
   // Load existing company details if a company is already created (e.g. from create-company stage)
   useEffect(() => {
@@ -53,6 +72,7 @@ export default function SetupCompany() {
               if (currentCompany) {
                 setName(currentCompany.name || "");
                 setLogo(currentCompany.logo || "");
+                if (currentCompany.departments) setDepartments(currentCompany.departments);
               }
             }
           })
@@ -164,7 +184,8 @@ export default function SetupCompany() {
           companyType, 
           country,
           employeesCount,
-          logo
+          logo,
+          departments
         }),
       });
 
@@ -314,6 +335,54 @@ export default function SetupCompany() {
                   <option value="201-500">201-500</option>
                   <option value="500+">500+</option>
                 </select>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="font-label-caps uppercase text-on-background">Departments (Optional)</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {commonDepartments.map(dept => (
+                  <button
+                    type="button"
+                    key={dept}
+                    onClick={() => toggleDepartment(dept)}
+                    className={`px-3 py-1 text-sm font-bold border-[2px] border-black ${departments.includes(dept) ? 'bg-[#FACC15] shadow-[2px_2px_0_0_#000000]' : 'bg-white hover:bg-gray-100'} transition-all`}
+                  >
+                    {dept}
+                  </button>
+                ))}
+                {departments.filter(d => !commonDepartments.includes(d)).map(dept => (
+                  <button
+                    type="button"
+                    key={dept}
+                    onClick={() => toggleDepartment(dept)}
+                    className={`px-3 py-1 text-sm font-bold border-[2px] border-black bg-[#FACC15] shadow-[2px_2px_0_0_#000000] transition-all flex items-center gap-1`}
+                  >
+                    {dept} <span className="text-xs ml-1">×</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customDepartment}
+                  onChange={(e) => setCustomDepartment(e.target.value)}
+                  placeholder="Custom department"
+                  className="flex-1 bg-background border-[3px] border-on-background px-4 py-2 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCustomDepartment();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={addCustomDepartment}
+                  className="bg-black text-white px-4 py-2 font-bold uppercase border-[3px] border-black hover:bg-[#FACC15] hover:text-black transition-colors"
+                >
+                  Add
+                </button>
               </div>
             </div>
 

@@ -14,20 +14,34 @@ export default function EmployeeDetails() {
     name: "",
     age: "",
     occupation: "",
-    phoneNumber: ""
+    phoneNumber: "",
+    department: ""
   });
+  const [departments, setDepartments] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!inviteToken) {
       router.push("/login");
+    } else {
+      const token = localStorage.getItem("token");
+      fetch(`/api/companies/invite-info/${inviteToken}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.company && data.company.departments) {
+          setDepartments(data.company.departments);
+        }
+      })
+      .catch(err => console.error(err));
     }
   }, [inviteToken, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.age || !formData.occupation || !formData.phoneNumber) {
+    if (!formData.name || !formData.age || !formData.occupation || !formData.phoneNumber || (departments.length > 0 && !formData.department)) {
       return setError("All fields are required");
     }
 
@@ -63,7 +77,7 @@ export default function EmployeeDetails() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ token: inviteToken })
+        body: JSON.stringify({ token: inviteToken, department: formData.department })
       });
 
       const joinData = await joinRes.json();
@@ -153,6 +167,26 @@ export default function EmployeeDetails() {
               <Briefcase className="absolute left-3 top-3.5 text-black/50" size={18} />
             </div>
           </div>
+
+          {departments.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <label className="font-black uppercase text-xs">Department</label>
+              <div className="relative">
+                <select
+                  required
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  className="w-full bg-[#f6f3ec] border-[3px] border-black pl-10 pr-4 py-3 font-bold focus:outline-none focus:bg-[#FACC15] transition-colors appearance-none cursor-pointer"
+                >
+                  <option value="" disabled>Select Department</option>
+                  {departments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+                <Briefcase className="absolute left-3 top-3.5 text-black/50" size={18} />
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <label className="font-black uppercase text-xs">Phone Number</label>
