@@ -11,6 +11,8 @@ import dashboardRouter from './dashboard';
 import uploadRouter from './upload';
 import usersRouter from './users';
 import invoiceTemplatesRouter from './invoiceTemplates';
+import publicRouter from './public';
+import clientsRouter from './clients';
 
 const router = Router();
 
@@ -25,6 +27,8 @@ router.use('/dashboard', dashboardRouter);
 router.use('/upload', uploadRouter);
 router.use('/users', usersRouter);
 router.use('/invoice-templates', invoiceTemplatesRouter);
+router.use('/public', publicRouter);
+router.use('/clients', clientsRouter);
 
 router.get('/health', (req, res) => {
   res.json({ status: 'ok' });

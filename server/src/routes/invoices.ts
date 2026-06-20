@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { Invoice, ActivityLog, Company } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
 import { generateCustomInvoicePDF } from '../utils/pdfGenerator';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -55,12 +56,16 @@ const calculateAmounts = (items: { description: string; quantity: number; unitPr
 // ---------------------------------------------------------------------------
 const VALID_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ['SENT', 'CANCELLED'],
-  SENT: ['PAID', 'CANCELLED']
+  SENT: ['VIEWED', 'PAID', 'OVERDUE', 'CANCELLED'],
+  VIEWED: ['PAID', 'OVERDUE', 'CANCELLED'],
+  OVERDUE: ['PAID', 'CANCELLED'],
+  PAID: []
 };
 
 // Map target status -> ActivityLog action
 const STATUS_ACTION_MAP: Record<string, string> = {
   SENT: 'INVOICE_SENT',
+  VIEWED: 'INVOICE_VIEWED',
   PAID: 'INVOICE_PAID',
   CANCELLED: 'INVOICE_CANCELLED'
 };
@@ -95,7 +100,8 @@ router.post(
         notes,
         logoUrl,
         customFields,
-        employeeIds
+        employeeIds,
+        clientId
       } = req.body;
 
       // --- Validation ---
@@ -141,6 +147,8 @@ router.post(
         totalAmount,
         status: 'DRAFT',
         dueDate: new Date(dueDate),
+        publicLinkToken: crypto.randomBytes(32).toString('hex'),
+        clientId: clientId || undefined,
         notes: notes || undefined,
         logoUrl: logoUrl || undefined,
         customFields: customFields || [],
@@ -283,7 +291,7 @@ router.put(
         return res.status(400).json({ message: 'Only DRAFT invoices can be updated' });
       }
 
-      const { clientName, clientEmail, clientAddress, items, taxRate, dueDate, notes } = req.body;
+      const { clientName, clientEmail, clientAddress, items, taxRate, dueDate, notes, clientId } = req.body;
 
       // Apply simple field updates
       if (clientName !== undefined) invoice.clientName = clientName.trim();
@@ -291,6 +299,7 @@ router.put(
       if (clientAddress !== undefined) invoice.clientAddress = clientAddress;
       if (dueDate !== undefined) invoice.dueDate = new Date(dueDate);
       if (notes !== undefined) invoice.notes = notes;
+      if (clientId !== undefined) invoice.clientId = clientId;
 
       // Recalculate amounts when items or taxRate change
       const newItems = items !== undefined ? items : invoice.items;
@@ -368,7 +377,12 @@ router.patch(
 
       invoice.status = newStatus;
 
-      // If marking as PAID, record the payment timestamp
+      if (newStatus === 'SENT') {
+        invoice.sentAt = new Date();
+      }
+      if (newStatus === 'VIEWED' && !invoice.viewedAt) {
+        invoice.viewedAt = new Date();
+      }
       if (newStatus === 'PAID') {
         invoice.paidAt = new Date();
       }
@@ -459,6 +473,112 @@ router.get(
       res.setHeader('Content-Disposition', `attachment; filename=Invoice-${invoice.invoiceNumber}.pdf`);
       return res.send(Buffer.from(pdfBuffer));
     } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * POST /invoices/:id/send
+ * Sends the invoice to the client via email and marks it as SENT.
+ */
+router.post(
+  '/:id/send',
+  authenticateToken,
+  requireCompany,
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      const { id } = req.params;
+      const companyId = req.user!.currentCompanyId;
+
+      const [invoice, company] = await Promise.all([
+        Invoice.findOne({ _id: id, companyId }),
+        Company.findById(companyId)
+      ]);
+
+      if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+      if (!company) return res.status(404).json({ message: 'Company not found' });
+
+      // Ensure clientEmail exists
+      if (!invoice.clientEmail) {
+        return res.status(400).json({ message: 'Client email is required to send the invoice' });
+      }
+
+      // Generate the PDF buffer
+      const pdfBuffer = await generateCustomInvoicePDF(invoice, company);
+
+      // Setup nodemailer
+      const nodemailer = require('nodemailer');
+      
+      // Use SMTP config if available, otherwise use a JSON transport (mock)
+      let transporter;
+      if (process.env.EMAIL_USER && process.env.GOOGLE_CLIENT_ID) {
+        transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            type: 'OAuth2',
+            user: process.env.EMAIL_USER,
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            refreshToken: process.env.GOOGLE_REFRESH_TOKEN
+          }
+        });
+      } else if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+        transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT || '587'),
+          secure: process.env.SMTP_PORT === '465',
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+          }
+        });
+      } else {
+        transporter = nodemailer.createTransport({ jsonTransport: true });
+        console.log('Using mock JSON transport for email.');
+      }
+
+      const mailOptions = {
+        from: `"${company.name}" <${process.env.EMAIL_USER || process.env.SMTP_USER || 'no-reply@radicalledger.com'}>`,
+        to: invoice.clientEmail,
+        subject: `Invoice ${invoice.invoiceNumber} from ${company.name}`,
+        text: `Dear ${invoice.clientName},\n\nPlease find attached your invoice ${invoice.invoiceNumber} for the amount of $${invoice.totalAmount.toLocaleString()}.\n\nThank you for your business!\n\n${company.name}`,
+        html: `<p>Dear <strong>${invoice.clientName}</strong>,</p>
+               <p>Please find attached your invoice <strong>${invoice.invoiceNumber}</strong> for the amount of <strong>$${invoice.totalAmount.toLocaleString()}</strong>.</p>
+               <p>You can also view your invoice online <a href="${process.env.CLIENT_URL || 'http://localhost:3000'}/public/invoice/${invoice.publicLinkToken}">here</a>.</p>
+               <p>Thank you for your business!</p>
+               <p><strong>${company.name}</strong></p>`,
+        attachments: [
+          {
+            filename: `Invoice-${invoice.invoiceNumber}.pdf`,
+            content: Buffer.from(pdfBuffer),
+            contentType: 'application/pdf'
+          }
+        ]
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email dispatched: ', info.messageId || 'Mock JSON');
+
+      // Update invoice status
+      if (invoice.status === 'DRAFT') {
+        invoice.status = 'SENT';
+      }
+      invoice.sentAt = new Date();
+      await invoice.save();
+
+      // Log activity
+      await ActivityLog.create({
+        companyId,
+        userId: req.user!.userId,
+        action: 'INVOICE_SENT',
+        description: `Invoice ${invoice.invoiceNumber} was sent to ${invoice.clientEmail}`,
+        metadata: { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber }
+      });
+
+      return res.status(200).json({ message: 'Invoice sent successfully', invoice });
+    } catch (err) {
+      console.error('Email send error:', err);
       next(err);
     }
   }

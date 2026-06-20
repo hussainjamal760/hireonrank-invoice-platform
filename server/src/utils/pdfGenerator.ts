@@ -1,14 +1,8 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
-import { UserOptions } from 'jspdf-autotable';
-
-// Fix for jspdf-autotable typing
-interface jsPDFWithPlugin extends jsPDF {
-  autoTable: (options: UserOptions) => jsPDF;
-}
+import autoTable from 'jspdf-autotable';
 
 export const generateSalarySlipPDF = async (record: any, company: any) => {
-  const doc = new jsPDF() as jsPDFWithPlugin;
+  const doc = new jsPDF();
 
   // Header
   doc.setFillColor(250, 204, 21); // #FACC15
@@ -51,7 +45,7 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
     ['TOTAL NET PAY', `Rs ${record.netPay.toLocaleString()}`]
   ];
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 75,
     head: [['Description', 'Amount']],
     body: [
@@ -91,7 +85,7 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
 };
 
 export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
-  const doc = new jsPDF() as jsPDFWithPlugin;
+  const doc = new jsPDF();
 
   // Header / Branding
   doc.setFillColor(0, 0, 0); // Black header for custom invoices
@@ -109,10 +103,10 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   // Company Details (From)
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
-  doc.text(company.name.toUpperCase(), 195, 25, { align: 'right' });
+  doc.text((company?.name || 'Company').toUpperCase(), 195, 25, { align: 'right' });
   doc.setFontSize(8);
-  doc.text(company.address || '', 195, 32, { align: 'right' });
-  doc.text(company.country || '', 195, 37, { align: 'right' });
+  doc.text(company?.address || '', 195, 32, { align: 'right' });
+  doc.text(company?.country || '', 195, 37, { align: 'right' });
 
   // Client Details (To)
   doc.setTextColor(0, 0, 0);
@@ -120,17 +114,17 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   doc.setFont('helvetica', 'bold');
   doc.text('BILL TO:', 15, 65);
   doc.setFont('helvetica', 'normal');
-  doc.text(invoice.clientName.toUpperCase(), 15, 72);
-  doc.text(invoice.clientEmail || '', 15, 78);
-  doc.text(invoice.clientAddress || '', 15, 84);
+  doc.text((invoice?.clientName || 'Client').toUpperCase(), 15, 72);
+  doc.text(invoice?.clientEmail || '', 15, 78);
+  doc.text(invoice?.clientAddress || '', 15, 84);
 
   // Invoice Meta
   doc.setFont('helvetica', 'bold');
   doc.text('DATE:', 140, 72);
   doc.text('DUE DATE:', 140, 78);
   doc.setFont('helvetica', 'normal');
-  doc.text(new Date(invoice.createdAt).toLocaleDateString(), 170, 72);
-  doc.text(new Date(invoice.dueDate).toLocaleDateString(), 170, 78);
+  doc.text(invoice?.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : '', 170, 72);
+  doc.text(invoice?.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '', 170, 78);
 
   // Custom Fields
   let customFieldsStartY = 95;
@@ -145,14 +139,15 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   }
 
   // Items Table
-  const body = invoice.items.map((item: any) => [
-    item.description,
-    item.quantity.toString(),
-    `$${item.unitPrice.toLocaleString()}`,
-    `$${item.amount.toLocaleString()}`
+  const items = invoice?.items || [];
+  const body = items.map((item: any) => [
+    item.description || '',
+    (item.quantity || 0).toString(),
+    `$${(item.unitPrice || 0).toLocaleString()}`,
+    `$${(item.amount || 0).toLocaleString()}`
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: Math.max(110, customFieldsStartY + 5),
     head: [['Description', 'Qty', 'Unit Price', 'Total']],
     body: body,
@@ -166,21 +161,21 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   });
 
   // Totals
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  const finalY = ((doc as any).lastAutoTable?.finalY || 130) + 10;
   doc.setFont('helvetica', 'bold');
   doc.text('SUBTOTAL:', 140, finalY);
-  doc.text(`TAX (${invoice.taxRate}%):`, 140, finalY + 7);
+  doc.text(`TAX (${invoice?.taxRate || 0}%):`, 140, finalY + 7);
   doc.setFontSize(14);
   doc.text('TOTAL AMOUNT:', 140, finalY + 18);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.text(`$${invoice.subtotal.toLocaleString()}`, 195, finalY, { align: 'right' });
-  doc.text(`$${invoice.taxAmount.toLocaleString()}`, 195, finalY + 7, { align: 'right' });
+  doc.text(`$${(invoice?.subtotal || 0).toLocaleString()}`, 195, finalY, { align: 'right' });
+  doc.text(`$${(invoice?.taxAmount || 0).toLocaleString()}`, 195, finalY + 7, { align: 'right' });
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text(`$${invoice.totalAmount.toLocaleString()}`, 195, finalY + 18, { align: 'right' });
+  doc.text(`$${(invoice?.totalAmount || 0).toLocaleString()}`, 195, finalY + 18, { align: 'right' });
 
   // Notes
   if (invoice.notes) {

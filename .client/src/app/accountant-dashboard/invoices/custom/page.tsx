@@ -228,7 +228,7 @@ export default function InvoiceDesignerPage() {
 
   const [zoom, setZoom] = useState(75);
   const [activeCanvasSection, setActiveCanvasSection] = useState<string | null>(null);
-  const [rightTab, setRightTab] = useState<string>('branding');
+  const [rightTab, setRightTab] = useState<string>('client');
   const [showPreview, setShowPreview] = useState(false);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -238,6 +238,37 @@ export default function InvoiceDesignerPage() {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [companyData, setCompanyData] = useState<{ logo: string, name: string, address: string, phone: string, website: string } | null>(null);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+
+  // Client Management
+  const [clients, setClients] = useState<any[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [clientData, setClientData] = useState({
+    name: 'Acme Corporation',
+    email: 'billing@acmecorp.com',
+    address: '456 Commerce Ave, Floor 12\nSan Francisco, CA 94105'
+  });
+
+  // Invoice Data
+  const [invoiceItems, setInvoiceItems] = useState([
+    { id: '1', description: 'Premium Software License', quantity: 1, unitPrice: 4999.00 }
+  ]);
+  const [taxRate, setTaxRate] = useState(8.5);
+  const [discountAmount, setDiscountAmount] = useState(0);
+
+  const subtotal = invoiceItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+  const taxAmount = (subtotal * taxRate) / 100;
+  const total = subtotal + taxAmount - discountAmount;
+
+  const CURRENCIES = [
+    { code: 'USD', symbol: '$' },
+    { code: 'EUR', symbol: '€' },
+    { code: 'GBP', symbol: '£' },
+    { code: 'PKR', symbol: 'Rs ' },
+    { code: 'INR', symbol: '₹' },
+    { code: 'AUD', symbol: 'A$' },
+    { code: 'CAD', symbol: 'C$' },
+  ];
+  const [currency, setCurrency] = useState(CURRENCIES[0]);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -297,10 +328,23 @@ export default function InvoiceDesignerPage() {
     } catch {}
   }, []);
 
+  const fetchClients = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch('/api/clients', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) setClients(data.clients || []);
+    } catch {}
+  }, []);
+
   useEffect(() => { 
     fetchTemplates(); 
     fetchCurrentCompany();
-  }, [fetchTemplates, fetchCurrentCompany]);
+    fetchClients();
+  }, [fetchTemplates, fetchCurrentCompany, fetchClients]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -385,20 +429,56 @@ export default function InvoiceDesignerPage() {
   };
 
   const handlePublish = async () => {
+    if (!selectedClientId) {
+      setToast({ message: 'Please select a Client first to publish an invoice', type: 'error' });
+      return;
+    }
+
     if (!currentTemplateId) {
       await handleSave();
     }
     const token = getToken();
-    if (!token || !currentTemplateId) return;
+    if (!token) return;
 
     try {
-      const res = await fetch(`/api/invoice-templates/${currentTemplateId}`, {
-        method: 'PUT',
+      // First mark the template as published
+      if (currentTemplateId) {
+        await fetch(`/api/invoice-templates/${currentTemplateId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ isPublished: true })
+        });
+      }
+
+      // Generate the final invoice
+      const res = await fetch('/api/invoices', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ isPublished: true })
+        body: JSON.stringify({
+          clientName: clientData.name,
+          clientEmail: clientData.email,
+          clientAddress: clientData.address,
+          clientId: selectedClientId,
+          items: invoiceItems.map(i => ({
+            description: i.description,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+            amount: i.quantity * i.unitPrice
+          })),
+          taxRate: taxRate,
+          dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
+          notes: branding.defaultNotes,
+          logoUrl: branding.logoUrl || companyData?.logo || '',
+          customFields: []
+        })
       });
-      if (!res.ok) throw new Error('Publish failed');
-      setToast({ message: 'Template published!', type: 'success' });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to generate invoice');
+      }
+
+      setToast({ message: 'Invoice Published & Generated successfully!', type: 'success' });
       fetchTemplates();
     } catch (err: any) {
       setToast({ message: err.message, type: 'error' });
@@ -538,6 +618,8 @@ export default function InvoiceDesignerPage() {
   const visibleSections = sections.filter(s => s.visible).sort((a, b) => a.order - b.order);
 
   const RIGHT_TABS = [
+    { key: 'client', label: 'Client', icon: User },
+    { key: 'items', label: 'Items', icon: Table2 },
     { key: 'branding', label: 'Branding', icon: Building2 },
     { key: 'theme', label: 'Theme', icon: Palette },
     { key: 'typography', label: 'Type', icon: Type },
@@ -630,9 +712,22 @@ export default function InvoiceDesignerPage() {
         return (
           <motion.div layoutId={`section-${section.id}`} style={sectionStyle} onClick={() => setActiveCanvasSection(section.id)} key={section.id}>
             <div style={{ fontSize: typography.bodySize - 2, textTransform: 'uppercase', fontWeight: 700, color: colors.primary, letterSpacing: 1, marginBottom: 4 }}>Bill To</div>
-            <div style={{ fontWeight: 600, color: colors.text }}>{SAMPLE_DATA.client.name}</div>
-            <div style={{ color: colors.secondary, fontSize: typography.bodySize - 1 }}>{SAMPLE_DATA.client.email}</div>
-            <div style={{ color: colors.secondary, fontSize: typography.bodySize - 1, whiteSpace: 'pre-line' }}>{SAMPLE_DATA.client.address}</div>
+            <InlineText
+              value={clientData.name}
+              onChange={(val: string) => setClientData({...clientData, name: val})}
+              style={{ fontWeight: 600, color: colors.text }}
+            />
+            <InlineText
+              value={clientData.email}
+              onChange={(val: string) => setClientData({...clientData, email: val})}
+              style={{ color: colors.secondary, fontSize: typography.bodySize - 1 }}
+            />
+            <InlineText
+              multiline
+              value={clientData.address}
+              onChange={(val: string) => setClientData({...clientData, address: val})}
+              style={{ color: colors.secondary, fontSize: typography.bodySize - 1, whiteSpace: 'pre-line' }}
+            />
           </motion.div>
         );
 
@@ -666,12 +761,21 @@ export default function InvoiceDesignerPage() {
                 </tr>
               </thead>
               <tbody>
-                {SAMPLE_DATA.items.map((item, i) => (
-                  <tr key={i} style={{ background: isStriped && i % 2 === 1 ? `${colors.primary}10` : 'transparent', borderBottom: isBordered ? `1px solid ${colors.secondary}20` : 'none' }}>
-                    <td style={{ padding: '8px 10px', color: colors.text }}>{item.description}</td>
+                {invoiceItems.map((item, i) => (
+                  <tr key={item.id} style={{ background: isStriped && i % 2 === 1 ? `${colors.primary}10` : 'transparent', borderBottom: isBordered ? `1px solid ${colors.secondary}20` : 'none' }}>
+                    <td style={{ padding: '8px 10px', color: colors.text }}>
+                      <InlineText
+                        value={item.description}
+                        onChange={(val: string) => {
+                          const newItems = [...invoiceItems];
+                          newItems[i].description = val;
+                          setInvoiceItems(newItems);
+                        }}
+                      />
+                    </td>
                     <td style={{ padding: '8px 10px', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', color: colors.text }}>{item.quantity}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'JetBrains Mono, monospace', color: colors.text }}>${item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: colors.text }}>${item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'JetBrains Mono, monospace', color: colors.text }}>{currency.symbol}{item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: colors.text }}>{currency.symbol}{(item.quantity * item.unitPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                   </tr>
                 ))}
               </tbody>
@@ -685,11 +789,11 @@ export default function InvoiceDesignerPage() {
             <div style={{ width: 260, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.secondary, fontSize: typography.bodySize - 1 }}>
                 <span>Subtotal</span>
-                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600 }}>${SAMPLE_DATA.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600 }}>{currency.symbol}{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.secondary, fontSize: typography.bodySize - 1 }}>
-                <span>Tax ({SAMPLE_DATA.taxRate}%)</span>
-                <span style={{ fontFamily: 'JetBrains Mono, monospace' }}>${SAMPLE_DATA.taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span>Tax ({taxRate}%)</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace' }}>{currency.symbol}{taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
           </motion.div>
@@ -700,7 +804,7 @@ export default function InvoiceDesignerPage() {
           <motion.div layoutId={`section-${section.id}`} style={{ ...sectionStyle, display: 'flex', justifyContent: 'flex-end' }} onClick={() => setActiveCanvasSection(section.id)} key={section.id}>
             <div style={{ width: 260, display: 'flex', justifyContent: 'space-between', color: '#16A34A', fontSize: typography.bodySize - 1 }}>
               <span>Discount</span>
-              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600 }}>-${SAMPLE_DATA.discount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600 }}>-{currency.symbol}{discountAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
           </motion.div>
         );
@@ -805,7 +909,7 @@ export default function InvoiceDesignerPage() {
           fontFamily: 'JetBrains Mono, monospace'
         }}>
           <span>TOTAL</span>
-          <span>${SAMPLE_DATA.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+          <span>{currency.symbol}{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
         </div>
       </motion.div>
     );
@@ -833,6 +937,16 @@ export default function InvoiceDesignerPage() {
           className="bg-[#f6f3ec] border-[3px] border-black px-4 py-2 font-mono font-bold text-sm focus:outline-none focus:bg-[#FACC15] w-52 transition-colors"
           placeholder="Template Name..."
         />
+
+        <select
+          value={currency.code}
+          onChange={(e) => setCurrency(CURRENCIES.find(c => c.code === e.target.value) || CURRENCIES[0])}
+          className="bg-[#f6f3ec] border-[3px] border-black px-3 py-2 font-mono font-bold text-sm focus:outline-none focus:bg-[#FACC15] cursor-pointer transition-colors"
+        >
+          {CURRENCIES.map(c => (
+            <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+          ))}
+        </select>
 
         <button onClick={() => setIsTemplatesOpen(!isTemplatesOpen)}
           className={`border-[3px] border-black px-3 py-2 font-black uppercase text-[10px] flex items-center gap-1.5 shadow-[3px_3px_0_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all ${isTemplatesOpen ? 'bg-black text-[#FACC15]' : 'bg-white text-black'}`}>
@@ -1068,6 +1182,171 @@ export default function InvoiceDesignerPage() {
           </div>
 
           <div className="p-4">
+            {rightTab === 'client' && (
+              <div className="flex flex-col gap-4">
+                <h4 className="font-label-caps uppercase text-[10px] font-black border-b-[2px] border-black pb-2 flex items-center gap-2">
+                  <User size={14} className="text-[#FACC15]" /> Client Selection
+                </h4>
+                
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase">Select Existing Client</label>
+                  <select
+                    value={selectedClientId || ""}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setSelectedClientId(id);
+                      if (id) {
+                        const client = clients.find(c => c._id === id);
+                        if (client) {
+                          setClientData({
+                            name: client.name,
+                            email: client.email,
+                            address: client.address || ""
+                          });
+                        }
+                      } else {
+                        setClientData({ name: "", email: "", address: "" });
+                      }
+                    }}
+                    className="bg-[#f6f3ec] border-[2px] border-black p-2.5 font-mono font-bold text-xs focus:outline-none focus:bg-[#FACC15] cursor-pointer"
+                  >
+                    <option value="">-- Custom (No Client) --</option>
+                    {clients.map(c => (
+                      <option key={c._id} value={c._id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase">Client Name</label>
+                  <input
+                    value={clientData.name}
+                    onChange={(e) => setClientData({ ...clientData, name: e.target.value })}
+                    className="bg-[#f6f3ec] border-[2px] border-black p-2.5 font-mono font-bold text-xs focus:outline-none focus:bg-[#FACC15] transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase">Email Address</label>
+                  <input
+                    value={clientData.email}
+                    onChange={(e) => setClientData({ ...clientData, email: e.target.value })}
+                    className="bg-[#f6f3ec] border-[2px] border-black p-2.5 font-mono font-bold text-xs focus:outline-none focus:bg-[#FACC15] transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase">Billing Address</label>
+                  <textarea
+                    rows={3}
+                    value={clientData.address}
+                    onChange={(e) => setClientData({ ...clientData, address: e.target.value })}
+                    className="bg-[#f6f3ec] border-[2px] border-black p-2.5 font-mono font-bold text-xs focus:outline-none focus:bg-[#FACC15] transition-colors resize-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {rightTab === 'items' && (
+              <div className="flex flex-col gap-4">
+                <h4 className="font-label-caps uppercase text-[10px] font-black border-b-[2px] border-black pb-2 flex items-center gap-2">
+                  <Table2 size={14} className="text-[#FACC15]" /> Line Items
+                </h4>
+                
+                <div className="flex flex-col gap-3">
+                  {invoiceItems.map((item, idx) => (
+                    <div key={item.id} className="bg-[#f6f3ec] border-[2px] border-black p-3 relative group">
+                      <button 
+                        onClick={() => {
+                          if(invoiceItems.length > 1) {
+                            setInvoiceItems(invoiceItems.filter(i => i.id !== item.id));
+                          }
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white border-[2px] border-black rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <X size={10} />
+                      </button>
+                      <input
+                        value={item.description}
+                        onChange={(e) => {
+                          const newItems = [...invoiceItems];
+                          newItems[idx].description = e.target.value;
+                          setInvoiceItems(newItems);
+                        }}
+                        placeholder="Description"
+                        className="w-full bg-transparent border-b-[2px] border-black/10 focus:border-black p-1 font-bold text-xs mb-2 outline-none"
+                      />
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <label className="text-[8px] font-black uppercase text-black/60">Qty</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const newItems = [...invoiceItems];
+                              newItems[idx].quantity = Number(e.target.value);
+                              setInvoiceItems(newItems);
+                            }}
+                            className="w-full bg-white border-[2px] border-black p-1.5 font-mono text-xs focus:outline-none focus:bg-[#FACC15]"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[8px] font-black uppercase text-black/60">Price</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.unitPrice}
+                            onChange={(e) => {
+                              const newItems = [...invoiceItems];
+                              newItems[idx].unitPrice = Number(e.target.value);
+                              setInvoiceItems(newItems);
+                            }}
+                            className="w-full bg-white border-[2px] border-black p-1.5 font-mono text-xs focus:outline-none focus:bg-[#FACC15]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      setInvoiceItems([
+                        ...invoiceItems, 
+                        { id: Date.now().toString(), description: 'New Item', quantity: 1, unitPrice: 0 }
+                      ]);
+                    }}
+                    className="w-full border-[2px] border-dashed border-black/30 p-2 text-xs font-black uppercase text-black/50 hover:bg-[#FACC15] hover:text-black hover:border-black transition-all flex items-center justify-center gap-1"
+                  >
+                    <Plus size={14} /> Add Line Item
+                  </button>
+                </div>
+
+                <div className="border-t-[2px] border-black pt-4 mt-2 flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-black uppercase w-20">Tax Rate %</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={taxRate}
+                      onChange={(e) => setTaxRate(Number(e.target.value))}
+                      className="flex-1 bg-[#f6f3ec] border-[2px] border-black p-2 font-mono font-bold text-xs focus:outline-none focus:bg-[#FACC15]"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-black uppercase w-20">Discount</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={discountAmount}
+                      onChange={(e) => setDiscountAmount(Number(e.target.value))}
+                      className="flex-1 bg-[#f6f3ec] border-[2px] border-black p-2 font-mono font-bold text-xs focus:outline-none focus:bg-[#FACC15]"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {rightTab === 'branding' && (
               <div className="flex flex-col gap-4">
                 <h4 className="font-label-caps uppercase text-[10px] font-black border-b-[2px] border-black pb-2 flex items-center gap-2">

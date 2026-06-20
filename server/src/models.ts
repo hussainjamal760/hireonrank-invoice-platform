@@ -75,6 +75,34 @@ const CompanySchema: Schema = new Schema({
 
 export const Company = mongoose.model<ICompany>('Company', CompanySchema);
 
+export interface IClient extends Document {
+  companyId: mongoose.Types.ObjectId;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  taxId?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ClientSchema: Schema = new Schema({
+  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  name: { type: String, required: true },
+  email: { type: String, required: true },
+  phone: { type: String },
+  address: { type: String },
+  taxId: { type: String },
+  notes: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+ClientSchema.index({ companyId: 1, email: 1 });
+
+export const Client = mongoose.model<IClient>('Client', ClientSchema);
+
 export type UserRole = 'OWNER' | 'ADMIN' | 'EMPLOYEE' | 'ACCOUNTANT';
 
 export interface IUserCompany extends Document {
@@ -174,7 +202,7 @@ EmployeeSchema.index({ companyId: 1, email: 1 }, { unique: true });
 export const Employee = mongoose.model<IEmployee>('Employee', EmployeeSchema);
 
 // Invoice Interface & Schema
-export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+export type InvoiceStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 
 export interface IInvoiceItem {
   description: string;
@@ -185,6 +213,7 @@ export interface IInvoiceItem {
 
 export interface IInvoice extends Document {
   companyId: mongoose.Types.ObjectId;
+  clientId?: mongoose.Types.ObjectId;
   invoiceNumber: string;
   clientName: string;
   clientEmail?: string;
@@ -198,6 +227,9 @@ export interface IInvoice extends Document {
   issueDate: Date;
   dueDate: Date;
   paidAt?: Date;
+  viewedAt?: Date;
+  sentAt?: Date;
+  publicLinkToken?: string;
   notes?: string;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -212,6 +244,7 @@ const InvoiceItemSchema: Schema = new Schema({
 
 const InvoiceSchema: Schema = new Schema({
   companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  clientId: { type: Schema.Types.ObjectId, ref: 'Client' },
   invoiceNumber: { type: String, required: true },
   clientName: { type: String, required: true },
   clientEmail: { type: String },
@@ -221,10 +254,13 @@ const InvoiceSchema: Schema = new Schema({
   taxRate: { type: Number, default: 0, min: 0, max: 100 },
   taxAmount: { type: Number, default: 0, min: 0 },
   totalAmount: { type: Number, required: true, min: 0 },
-  status: { type: String, enum: ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED'], default: 'DRAFT', required: true },
+  status: { type: String, enum: ['DRAFT', 'SENT', 'VIEWED', 'PAID', 'OVERDUE', 'CANCELLED'], default: 'DRAFT', required: true },
   issueDate: { type: Date, default: Date.now },
   dueDate: { type: Date, required: true },
   paidAt: { type: Date },
+  viewedAt: { type: Date },
+  sentAt: { type: Date },
+  publicLinkToken: { type: String, unique: true, sparse: true },
   notes: { type: String },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now }
@@ -278,7 +314,7 @@ export const PayrollRecord = mongoose.model<IPayrollRecord>('PayrollRecord', Pay
 
 // ActivityLog Interface & Schema
 export type ActivityAction =
-  | 'INVOICE_CREATED' | 'INVOICE_SENT' | 'INVOICE_PAID' | 'INVOICE_CANCELLED'
+  | 'INVOICE_CREATED' | 'INVOICE_SENT' | 'INVOICE_VIEWED' | 'INVOICE_PAID' | 'INVOICE_CANCELLED'
   | 'EMPLOYEE_ADDED' | 'EMPLOYEE_UPDATED' | 'EMPLOYEE_REMOVED'
   | 'PAYROLL_GENERATED' | 'PAYROLL_PAID'
   | 'MEMBER_INVITED' | 'MEMBER_JOINED'
@@ -299,7 +335,7 @@ const ActivityLogSchema: Schema = new Schema({
   action: {
     type: String,
     enum: [
-      'INVOICE_CREATED', 'INVOICE_SENT', 'INVOICE_PAID', 'INVOICE_CANCELLED',
+      'INVOICE_CREATED', 'INVOICE_SENT', 'INVOICE_VIEWED', 'INVOICE_PAID', 'INVOICE_CANCELLED',
       'EMPLOYEE_ADDED', 'EMPLOYEE_UPDATED', 'EMPLOYEE_REMOVED',
       'PAYROLL_GENERATED', 'PAYROLL_PAID',
       'MEMBER_INVITED', 'MEMBER_JOINED',

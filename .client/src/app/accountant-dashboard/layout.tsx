@@ -12,6 +12,7 @@ import {
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/accountant-dashboard", icon: Home },
+  { name: "Clients", href: "/accountant-dashboard/clients", icon: Building2 },
   { name: "Employees", href: "/accountant-dashboard/employees", icon: Users },
   { name: "Payroll", href: "/accountant-dashboard/payroll", icon: Banknote },
   { name: "Invoices", href: "/accountant-dashboard/invoices", icon: FileText },
