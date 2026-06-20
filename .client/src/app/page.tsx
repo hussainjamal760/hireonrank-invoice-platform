@@ -51,6 +51,7 @@ const StaggerItem = ({ children, className = "" }: { children: React.ReactNode, 
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeTheme, setActiveTheme] = useState("studio");
   const { scrollYProgress } = useScroll();
   const yParallax = useTransform(scrollYProgress, [0, 1], [0, -100]);
   const heroImageRef = useRef<HTMLDivElement>(null);
@@ -420,50 +421,106 @@ export default function Home() {
               </p>
               
               <div className="flex flex-col gap-4">
-                <div className="border-[3px] border-on-background p-4 flex justify-between items-center group hover:bg-primary-container transition-colors cursor-pointer neo-brutal-shadow hover:translate-x-[2px] hover:translate-y-[2px] hover:neo-brutal-shadow-active">
+                <div onClick={() => setActiveTheme('ledger')} className={`border-[3px] border-on-background p-4 flex justify-between items-center group cursor-pointer transition-colors neo-brutal-shadow ${activeTheme === 'ledger' ? 'bg-on-background text-white shadow-[4px_4px_0_0_#FACC15]' : 'bg-white hover:bg-surface-container-low hover:translate-x-[2px] hover:translate-y-[2px] hover:neo-brutal-shadow-active'}`}>
                   <div>
                     <span className="font-headline-md text-xl block uppercase font-black">Ledger</span>
                     <span className="font-data-md opacity-70">Minimal · serif</span>
                   </div>
-                  <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+                  {activeTheme === 'ledger' ? <CheckCircle2 className="text-primary-container" /> : <ArrowRight className="group-hover:translate-x-2 transition-transform" />}
                 </div>
-                <div className="border-[3px] border-on-background p-4 flex justify-between items-center bg-on-background text-white group cursor-pointer neo-brutal-shadow">
+                <div onClick={() => setActiveTheme('studio')} className={`border-[3px] border-on-background p-4 flex justify-between items-center group cursor-pointer transition-colors neo-brutal-shadow ${activeTheme === 'studio' ? 'bg-on-background text-white shadow-[4px_4px_0_0_#FACC15]' : 'bg-white hover:bg-surface-container-low hover:translate-x-[2px] hover:translate-y-[2px] hover:neo-brutal-shadow-active'}`}>
                   <div>
                     <span className="font-headline-md text-xl block uppercase font-black">Studio</span>
                     <span className="font-data-md opacity-70">Bold · geometric</span>
                   </div>
-                  <CheckCircle2 className="text-primary-container" />
+                  {activeTheme === 'studio' ? <CheckCircle2 className="text-primary-container" /> : <ArrowRight className="group-hover:translate-x-2 transition-transform" />}
                 </div>
-                <div className="border-[3px] border-on-background p-4 flex justify-between items-center group hover:bg-surface-dim transition-colors cursor-pointer neo-brutal-shadow hover:translate-x-[2px] hover:translate-y-[2px] hover:neo-brutal-shadow-active">
+                <div onClick={() => setActiveTheme('slate')} className={`border-[3px] border-on-background p-4 flex justify-between items-center group cursor-pointer transition-colors neo-brutal-shadow ${activeTheme === 'slate' ? 'bg-on-background text-white shadow-[4px_4px_0_0_#FACC15]' : 'bg-white hover:bg-surface-container-low hover:translate-x-[2px] hover:translate-y-[2px] hover:neo-brutal-shadow-active'}`}>
                   <div>
                     <span className="font-headline-md text-xl block uppercase font-black">Slate</span>
                     <span className="font-data-md opacity-70">Corporate · clean</span>
                   </div>
-                  <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+                  {activeTheme === 'slate' ? <CheckCircle2 className="text-primary-container" /> : <ArrowRight className="group-hover:translate-x-2 transition-transform" />}
                 </div>
               </div>
             </FadeIn>
           </div>
           <div className="lg:w-1/2 p-margin-desktop bg-[#f0f0f0] flex items-center justify-center pattern-grid relative overflow-hidden">
-             <motion.div 
-               whileHover={{ scale: 1.05, rotate: 1 }}
-               className="w-full max-w-md bg-white border-[4px] border-on-background p-8 neo-brutal-shadow-lg"
-             >
-               <div className="flex justify-between items-center border-b-[4px] border-on-background pb-6 mb-6">
-                 <div className="w-16 h-16 bg-on-background rounded-full flex items-center justify-center text-white font-headline-lg">S</div>
-                 <div className="text-right">
-                   <h2 className="font-headline-lg text-3xl font-black uppercase">INVOICE</h2>
-                   <p className="font-data-md">#0042</p>
-                 </div>
-               </div>
-               <div className="space-y-4 mb-8">
-                 <div className="h-4 bg-surface-dim w-3/4"></div>
-                 <div className="h-4 bg-surface-dim w-1/2"></div>
-               </div>
-               <div className="border-[2px] border-on-background p-4 bg-primary-container font-headline-md text-xl text-center uppercase font-black">
-                 Total: Rs 150,000
-               </div>
-             </motion.div>
+             <AnimatePresence mode="wait">
+               {activeTheme === 'ledger' && (
+                 <motion.div 
+                   key="ledger"
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0, y: -20 }}
+                   className="w-full max-w-md bg-white border-[4px] border-on-background p-8 shadow-[12px_12px_0_0_rgba(0,0,0,1)] font-display-lg"
+                 >
+                   <div className="flex justify-between items-end border-b-[4px] border-on-background pb-6 mb-6">
+                     <div className="w-16 h-16 bg-on-background rounded-full flex items-center justify-center text-white font-headline-lg">L</div>
+                     <div className="text-right">
+                       <h2 className="text-4xl font-black uppercase">INVOICE</h2>
+                       <p className="font-data-md mt-2">#0042</p>
+                     </div>
+                   </div>
+                   <div className="space-y-4 mb-8 font-data-md text-xl">
+                     <div className="flex justify-between"><span>Web Design</span><span>Rs 120,000</span></div>
+                     <div className="flex justify-between"><span>Branding</span><span>Rs 30,000</span></div>
+                   </div>
+                   <div className="border-[2px] border-on-background p-4 bg-white text-xl uppercase font-black flex justify-between items-center">
+                     <span>Total</span><span>Rs 150,000</span>
+                   </div>
+                 </motion.div>
+               )}
+               {activeTheme === 'studio' && (
+                 <motion.div 
+                   key="studio"
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0, y: -20 }}
+                   className="w-full max-w-md bg-white border-[4px] border-on-background p-8 shadow-[12px_12px_0_0_rgba(0,0,0,1)]"
+                 >
+                   <div className="flex flex-col gap-6 border-b-[4px] border-on-background pb-6 mb-6">
+                     <div className="w-16 h-16 bg-on-background flex items-center justify-center text-white font-headline-lg font-black">S</div>
+                     <div className="text-left">
+                       <h2 className="font-headline-lg text-4xl font-black uppercase">INVOICE</h2>
+                       <p className="font-data-md mt-1">#0042</p>
+                     </div>
+                   </div>
+                   <div className="space-y-4 mb-8 font-data-md text-xl">
+                     <div className="flex justify-between"><span>Web Design</span><span>Rs 120,000</span></div>
+                     <div className="flex justify-between"><span>Branding</span><span>Rs 30,000</span></div>
+                   </div>
+                   <div className="border-[4px] border-on-background p-4 bg-primary-container font-headline-md text-xl text-center uppercase font-black">
+                     Total: Rs 150,000
+                   </div>
+                 </motion.div>
+               )}
+               {activeTheme === 'slate' && (
+                 <motion.div 
+                   key="slate"
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0, y: -20 }}
+                   className="w-full max-w-md bg-[#e2e8f0] border-[4px] border-on-background p-8 shadow-[12px_12px_0_0_rgba(0,0,0,1)] font-body-lg font-bold"
+                 >
+                   <div className="flex justify-between items-center border-b-[4px] border-on-background pb-6 mb-6">
+                     <div className="text-left">
+                       <h2 className="text-3xl font-black uppercase tracking-widest text-on-surface-variant">INVOICE</h2>
+                       <p className="font-data-md mt-1">#0042</p>
+                     </div>
+                     <div className="w-16 h-16 bg-on-background flex items-center justify-center text-white font-headline-lg">C</div>
+                   </div>
+                   <div className="space-y-4 mb-8 font-data-md text-xl bg-white p-4 border-[2px] border-on-background">
+                     <div className="flex justify-between"><span>Web Design</span><span>Rs 120,000</span></div>
+                     <div className="border-t-[2px] border-dashed border-on-background my-2"></div>
+                     <div className="flex justify-between"><span>Branding</span><span>Rs 30,000</span></div>
+                   </div>
+                   <div className="border-[2px] border-on-background p-4 bg-on-background text-white text-xl uppercase font-black flex justify-between items-center">
+                     <span>Total Due</span><span>Rs 150,000</span>
+                   </div>
+                 </motion.div>
+               )}
+             </AnimatePresence>
           </div>
         </section>
 

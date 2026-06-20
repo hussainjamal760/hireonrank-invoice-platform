@@ -39,11 +39,11 @@ export default function Contact() {
                 <div className="flex flex-col gap-6">
                   <div className="flex items-center gap-4 bg-white border-[4px] border-on-background p-4 neo-brutal-shadow w-fit">
                     <Mail size={24} />
-                    <span className="font-data-md text-xl uppercase font-black">hello@voicy.com</span>
+                    <span className="font-data-md text-xl uppercase font-black">hjamal9865@gmail.com</span>
                   </div>
                   <div className="flex items-center gap-4 bg-white border-[4px] border-on-background p-4 neo-brutal-shadow w-fit">
                     <Phone size={24} />
-                    <span className="font-data-md text-xl uppercase font-black">+1 (800) 555-0199</span>
+                    <span className="font-data-md text-xl uppercase font-black">+92 3181792848  </span>
                   </div>
                   <div className="flex items-center gap-4 bg-white border-[4px] border-on-background p-4 neo-brutal-shadow w-fit">
                     <MapPin size={24} />
