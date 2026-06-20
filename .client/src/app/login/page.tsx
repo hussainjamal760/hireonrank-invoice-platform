@@ -115,12 +115,10 @@ export default function Login() {
 
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
-      if (data.state === "NO_COMPANY_STATE") {
-        if (inviteToken) {
-          router.push(`/create-company?invite_token=${inviteToken}`);
-        } else {
-          router.push("/create-company");
-        }
+      if (inviteToken) {
+        router.push(`/employee-details?invite_token=${inviteToken}`);
+      } else if (data.state === "NO_COMPANY_STATE") {
+        router.push("/create-company");
       } else {
         router.push("/accountant-dashboard");
       }
@@ -177,12 +175,10 @@ export default function Login() {
       localStorage.setItem("token", data.token);
       if (data.state === "ADMIN_BYPASS") {
         router.push("/admin-dashboard");
+      } else if (inviteToken) {
+        router.push(`/employee-details?invite_token=${inviteToken}`);
       } else if (data.state === "NO_COMPANY_STATE") {
-        if (inviteToken) {
-          router.push(`/create-company?invite_token=${inviteToken}`);
-        } else {
-          router.push("/create-company");
-        }
+        router.push("/create-company");
       } else {
         router.push("/accountant-dashboard");
       }

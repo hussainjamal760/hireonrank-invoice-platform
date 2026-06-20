@@ -6,6 +6,9 @@ export interface IUser extends Document {
   password?: string;
   googleId?: string;
   profilePicture?: string;
+  age?: number;
+  occupation?: string;
+  phoneNumber?: string;
   createdAt: Date;
 }
 
@@ -15,6 +18,9 @@ const UserSchema: Schema = new Schema({
   password: { type: String },
   googleId: { type: String },
   profilePicture: { type: String },
+  age: { type: Number },
+  occupation: { type: String },
+  phoneNumber: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 

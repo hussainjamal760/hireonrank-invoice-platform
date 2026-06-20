@@ -160,6 +160,15 @@ router.post(
         }
       }
 
+      const existingInvitation = await Invitation.findOne({
+        companyId: req.user.currentCompanyId,
+        email: cleanEmail,
+        status: 'PENDING'
+      });
+      if (existingInvitation) {
+        return res.status(400).json({ message: 'An invitation has already been sent to this email' });
+      }
+
       const token = crypto.randomBytes(32).toString('hex');
 
       await Invitation.findOneAndUpdate(
@@ -227,6 +236,16 @@ router.post(
               results.failed.push({ email: cleanEmail, reason: 'Already a member' });
               return;
             }
+          }
+
+          const existingInvitation = await Invitation.findOne({
+            companyId: req.user!.currentCompanyId,
+            email: cleanEmail,
+            status: 'PENDING'
+          });
+          if (existingInvitation) {
+            results.failed.push({ email: cleanEmail, reason: 'Invitation already sent' });
+            return;
           }
 
           const token = crypto.randomBytes(32).toString('hex');

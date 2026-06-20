@@ -54,21 +54,21 @@ export const sendOtpEmail = async (toEmail: string, otp: string): Promise<boolea
       }
     } as any);
 
-    // Styling the email using a clean, bold, high-contrast Neo-Brutalist theme
+    // Styling the email using a clean, bold, high-contrast Neo-Brutalist theme matching Voicy
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Verify Your Account</title>
+        <title>Voicy Verification</title>
         <style>
           body {
-            font-family: 'JetBrains Mono', Courier, monospace, sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f6f3ec;
             margin: 0;
             padding: 40px 20px;
-            color: #1a1a1a;
+            color: #1c1c18;
           }
           .container {
             max-width: 500px;
@@ -76,59 +76,65 @@ export const sendOtpEmail = async (toEmail: string, otp: string): Promise<boolea
             background-color: #ffffff;
             border: 4px solid #000000;
             box-shadow: 8px 8px 0px #000000;
-            padding: 30px;
+            padding: 35px;
             box-sizing: border-box;
           }
           .header {
-            font-size: 24px;
-            font-weight: 800;
+            font-size: 28px;
+            font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: -0.5px;
+            font-style: italic;
+            letter-spacing: -1px;
             border-bottom: 4px solid #000000;
             padding-bottom: 15px;
             margin-bottom: 25px;
+            display: flex;
+            align-items: center;
           }
           .description {
             font-size: 16px;
+            font-weight: 700;
             line-height: 1.5;
             margin-bottom: 25px;
           }
           .otp-box {
-            background-color: #ffde4d;
-            border: 3px solid #000000;
+            background-color: #facc15;
+            border: 4px solid #000000;
             box-shadow: 4px 4px 0px #000000;
             padding: 20px;
             text-align: center;
-            font-size: 32px;
-            font-weight: 800;
-            letter-spacing: 6px;
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: 8px;
             margin-bottom: 25px;
             color: #000000;
           }
           .footer {
             font-size: 12px;
+            font-weight: 700;
             color: #666666;
-            border-top: 2px solid #e5e7eb;
+            border-top: 3px solid #000000;
             padding-top: 15px;
             margin-top: 30px;
+            text-transform: uppercase;
           }
         </style>
       </head>
       <body>
         <div class="container">
-          <div class="header">RADICAL LEDGER</div>
+          <div class="header">VOICY</div>
           <div class="description">
             Hello,<br><br>
-            Please use the following 6-digit One-Time Password (OTP) to complete your sign-in / verification process. This code will expire in <strong>5 minutes</strong>.
+            Use this 6-digit verification code to access your terminal. It expires in <strong>5 minutes</strong>.
           </div>
           <div class="otp-box">
             ${otp}
           </div>
           <div class="description" style="font-size: 14px;">
-            If you did not request this code, you can safely ignore this email.
+            If you did not request this, you can ignore it.
           </div>
           <div class="footer">
-            Radical Ledger SaaS Invoice & Payroll Platform. &copy; 2026. All rights reserved.
+            VOICY &copy; 2026. Ai Invoice Buddy.
           </div>
         </div>
       </body>
@@ -136,10 +142,10 @@ export const sendOtpEmail = async (toEmail: string, otp: string): Promise<boolea
     `;
 
     const mailOptions = {
-      from: `"Radical Ledger" <${emailUser}>`,
+      from: `"Voicy" <${emailUser}>`,
       to: toEmail,
-      subject: `[Radical Ledger] Your 6-digit Login OTP is: ${otp}`,
-      text: `Your Radical Ledger OTP is: ${otp}. It expires in 5 minutes.`,
+      subject: `[VOICY] Your Verification Code: ${otp}`,
+      text: `Your Voicy verification code is: ${otp}. It expires in 5 minutes.`,
       html: htmlContent
     };
 
@@ -179,7 +185,7 @@ export const sendInvitationEmail = async (
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
-  const joinLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/create-company?invite_token=${inviteToken}`;
+  const joinLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?invite_token=${inviteToken}`;
 
   if (!emailUser || !clientId || !clientSecret || !refreshToken) {
     console.warn('[EMAIL SERVICE] Missing environment variables. Falling back to console log.');
@@ -227,11 +233,11 @@ export const sendInvitationEmail = async (
         <title>You're Invited!</title>
         <style>
           body {
-            font-family: 'JetBrains Mono', Courier, monospace, sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f6f3ec;
             margin: 0;
             padding: 40px 20px;
-            color: #1a1a1a;
+            color: #1c1c18;
           }
           .container {
             max-width: 500px;
@@ -239,66 +245,73 @@ export const sendInvitationEmail = async (
             background-color: #ffffff;
             border: 4px solid #000000;
             box-shadow: 8px 8px 0px #000000;
-            padding: 30px;
+            padding: 35px;
             box-sizing: border-box;
           }
           .header {
-            font-size: 24px;
-            font-weight: 800;
+            font-size: 28px;
+            font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: -0.5px;
+            font-style: italic;
+            letter-spacing: -1px;
             border-bottom: 4px solid #000000;
             padding-bottom: 15px;
             margin-bottom: 25px;
+            display: flex;
+            align-items: center;
           }
           .description {
             font-size: 16px;
+            font-weight: 700;
             line-height: 1.6;
             margin-bottom: 25px;
           }
           .role-box {
-            background-color: #dbeafe;
-            border: 3px solid #000000;
+            background-color: #e2e2e2;
+            border: 4px solid #000000;
             box-shadow: 4px 4px 0px #000000;
             padding: 12px 20px;
             text-align: center;
-            font-size: 18px;
-            font-weight: 800;
+            font-size: 20px;
+            font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 2px;
             margin-bottom: 25px;
-            color: #1e40af;
+            color: #000000;
           }
           .join-btn {
             display: block;
-            background-color: #ffde4d;
-            border: 3px solid #000000;
+            background-color: #facc15;
+            border: 4px solid #000000;
             box-shadow: 4px 4px 0px #000000;
             padding: 16px;
             text-align: center;
             font-size: 16px;
-            font-weight: 800;
+            font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 2px;
             color: #000000;
             text-decoration: none;
             margin-bottom: 25px;
+            transition: all 0.2s;
           }
           .footer {
             font-size: 12px;
+            font-weight: 700;
             color: #666666;
-            border-top: 2px solid #e5e7eb;
+            border-top: 3px solid #000000;
             padding-top: 15px;
             margin-top: 30px;
+            text-transform: uppercase;
           }
         </style>
       </head>
       <body>
         <div class="container">
-          <div class="header">RADICAL LEDGER</div>
+          <div class="header">VOICY</div>
           <div class="description">
             Hello,<br><br>
-            You've been invited to join <strong>${companyName}</strong> on Radical Ledger as:
+            You've been invited to join <strong>${companyName}</strong> on Voicy as:
           </div>
           <div class="role-box">${role}</div>
           <div class="description" style="font-size: 14px;">
@@ -307,10 +320,10 @@ export const sendInvitationEmail = async (
           <a href="${joinLink}" class="join-btn">Accept Invitation →</a>
           <div class="description" style="font-size: 13px; color: #666;">
             If the button doesn't work, copy and paste this link into your browser:<br>
-            <span style="word-break: break-all; color: #1e40af;">${joinLink}</span>
+            <span style="word-break: break-all; color: #000;">${joinLink}</span>
           </div>
           <div class="footer">
-            Radical Ledger SaaS Invoice & Payroll Platform. &copy; 2026. All rights reserved.
+            VOICY &copy; 2026. Ai Invoice Buddy.
           </div>
         </div>
       </body>
@@ -318,9 +331,9 @@ export const sendInvitationEmail = async (
     `;
 
     const mailOptions = {
-      from: `"Radical Ledger" <${emailUser}>`,
+      from: `"Voicy" <${emailUser}>`,
       to: toEmail,
-      subject: `[Radical Ledger] You're invited to join ${companyName}`,
+      subject: `[VOICY] You're invited to join ${companyName}`,
       text: `You've been invited to join ${companyName} as ${role}. Accept here: ${joinLink}`,
       html: htmlContent
     };

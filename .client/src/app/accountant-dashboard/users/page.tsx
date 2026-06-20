@@ -86,11 +86,11 @@ export default function UsersPage() {
             return { email, valid: false, reason: "Invalid format" };
           }
           // Check if already member
-          if (members.some(m => m.user?.email === email)) {
+          if (members.some(m => m.user?.email?.toLowerCase() === email)) {
             return { email, valid: false, reason: "Already a member" };
           }
           // Check if already invited
-          if (invitations.some(inv => inv.email === email)) {
+          if (invitations.some(inv => inv.email?.toLowerCase() === email)) {
             return { email, valid: false, reason: "Already invited" };
           }
           return { email, valid: true };

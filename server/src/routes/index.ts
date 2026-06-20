@@ -7,6 +7,7 @@ import invoicesRouter from './invoices';
 import payrollRouter from './payroll';
 import dashboardRouter from './dashboard';
 import uploadRouter from './upload';
+import usersRouter from './users';
 
 const router = Router();
 
@@ -17,6 +18,7 @@ router.use('/invoices', invoicesRouter);
 router.use('/payroll', payrollRouter);
 router.use('/dashboard', dashboardRouter);
 router.use('/upload', uploadRouter);
+router.use('/users', usersRouter);
 
 router.get('/health', (req, res) => {
   res.json({ status: 'ok' });
