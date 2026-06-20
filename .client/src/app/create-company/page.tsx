@@ -140,7 +140,7 @@ export default function CreateCompany() {
     setError("");
 
     try {
-      const res = await fetch(`/api/companies`, {
+      const res = await fetch(`/api/company/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -155,7 +155,7 @@ export default function CreateCompany() {
       localStorage.setItem("token", data.token);
       
       // Redirect to dashboard
-      router.push("/admin-dashboard");
+      router.push("/accountant-dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to create company");
     } finally {

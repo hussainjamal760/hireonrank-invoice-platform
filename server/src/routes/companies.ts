@@ -1,7 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { User, Company, UserCompany, Invitation } from '../models';
+import mongoose from 'mongoose';
+import { User, Company, UserCompany, Invitation, Employee } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
 import cloudinary from '../utils/cloudinary';
 import { sendInvitationEmail } from '../utils/email';
@@ -262,6 +263,32 @@ router.post('/join', authenticateToken, async (req: AuthRequest, res: Response, 
         companyId: invitation.companyId,
         role: invitation.role
       });
+
+      // Automatically add to Employees collection if they are meant to be in the company
+      try {
+        const existingEmployee = await Employee.findOne({
+          companyId: invitation.companyId,
+          email: invitation.email
+        });
+
+        if (!existingEmployee) {
+          const userDoc = await User.findById(req.user.userId);
+          await Employee.create({
+            companyId: invitation.companyId,
+            userId: req.user.userId,
+            name: userDoc?.name || invitation.email.split('@')[0],
+            email: invitation.email,
+            salary: 0,
+            status: 'ACTIVE'
+          });
+        } else if (!existingEmployee.userId) {
+          // Link if employee was created manually before
+          existingEmployee.userId = new mongoose.Types.ObjectId(req.user.userId);
+          await existingEmployee.save();
+        }
+      } catch (err) {
+        console.error("Error auto-adding user as employee:", err);
+      }
     }
 
     const company = await Company.findById(invitation.companyId);

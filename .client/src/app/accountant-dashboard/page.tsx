@@ -1,95 +1,122 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { 
-  Building2, Activity, Users, FileText, Banknote, Wallet,
-  TrendingUp, TrendingDown, Clock, ChevronRight
+  Building2, Users, FileText, Banknote, Wallet,
+  TrendingUp, TrendingDown, Clock, Activity, Loader2
 } from "lucide-react";
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, LineChart, Line
-} from "recharts";
 
-// Mock Data
-const growthData = [
-  { name: 'Jan', companies: 400 },
-  { name: 'Feb', companies: 600 },
-  { name: 'Mar', companies: 850 },
-  { name: 'Apr', companies: 930 },
-  { name: 'May', companies: 1100 },
-  { name: 'Jun', companies: 1248 },
-];
+interface DashboardStats {
+  totalEmployees: number;
+  totalInvoices: number;
+  totalRevenue: number;
+  pendingRevenue: number;
+  totalPayroll: number;
+  teamMembers: number;
+  trends: {
+    employees: string;
+    invoices: string;
+    revenue: string;
+    pendingRevenue: string;
+    payroll: string;
+    teamMembers: string;
+  };
+}
 
-const revenueData = [
-  { name: 'Jan', revenue: 40 },
-  { name: 'Feb', revenue: 65 },
-  { name: 'Mar', revenue: 98 },
-  { name: 'Apr', revenue: 120 },
-  { name: 'May', revenue: 155 },
-  { name: 'Jun', revenue: 184 },
-];
+interface ActivityLog {
+  _id: string;
+  action: string;
+  description: string;
+  createdAt: string;
+}
 
-const invoiceData = [
-  { name: 'Jan', sent: 12, paid: 11 },
-  { name: 'Feb', sent: 18, paid: 16 },
-  { name: 'Mar', sent: 24, paid: 21 },
-  { name: 'Apr', sent: 31, paid: 28 },
-  { name: 'May', sent: 42, paid: 39 },
-  { name: 'Jun', sent: 51, paid: 46 },
-];
+interface Invoice {
+  _id: string;
+  status: string;
+  amount: number;
+}
 
-const activities = [
-  { time: "2 min ago", text: "ABC Company created invoice #123", icon: FileText, bg: "bg-[#FACC15]", color: "text-black" },
-  { time: "15 min ago", text: "XYZ Company generated payroll for 42 employees", icon: Banknote, bg: "bg-blue-400", color: "text-black" },
-  { time: "1 hour ago", text: "New company 'Northwind' registered", icon: Building2, bg: "bg-purple-400", color: "text-black" },
-  { time: "2 hours ago", text: "New user 'Sarah J.' joined Verafield", icon: Users, bg: "bg-emerald-400", color: "text-black" },
-  { time: "5 hours ago", text: "System daily backup completed successfully", icon: Activity, bg: "bg-gray-200", color: "text-black" },
-];
+export default function AccountantDashboard() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
+  const fetchData = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      // 1. Fetch KPI metrics MoM trends
+      const statsRes = await fetch("/api/dashboard/stats", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const statsData = await statsRes.json();
+      
+      // 2. Fetch Activity log feed
+      const activityRes = await fetch("/api/dashboard/activity", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const activityData = await activityRes.json();
+
+      // 3. Fetch payroll invoices to calculate status breakdown
+      // First, decode companyId from token
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const decoded = JSON.parse(atob(base64));
+      const companyId = decoded.currentCompanyId;
+
+      let invoicesData = [];
+      if (companyId) {
+        const invoicesRes = await fetch(`/api/invoice/${companyId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (invoicesRes.ok) {
+          const resJson = await invoicesRes.json();
+          invoicesData = resJson.invoices || [];
+        }
+      }
+
+      setStats(statsData);
+      setLogs(Array.isArray(activityData) ? activityData : []);
+      setInvoices(invoicesData);
+    } catch (err: any) {
+      console.error(err);
+      setError("Failed to fetch command center statistics.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (loading) {
     return (
-      <div className="bg-white border-[3px] border-black p-4 shadow-[4px_4px_0_0_#FACC15]">
-        <p className="text-black font-label-caps text-xs uppercase mb-3 tracking-widest border-b-[2px] border-black pb-2">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} className="font-display-md text-lg text-black flex items-center gap-2">
-            <span className="w-3 h-3 border-[2px] border-black" style={{ backgroundColor: entry.color || '#FACC15' }}></span>
-            {entry.name}: <span className="font-black">{entry.value}</span>
-          </p>
-        ))}
+      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-12 h-12 text-[#FACC15] animate-spin" strokeWidth={3} />
+        <span className="font-label-caps text-lg uppercase tracking-widest text-[#735c00] animate-pulse">
+          Querying Ledger Data...
+        </span>
       </div>
     );
   }
-  return null;
-};
 
-const KpiCard = ({ title, value, trend, icon: Icon, delay, isPositive = true }: any) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, delay }}
-    className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all group cursor-pointer"
-  >
-    <div className="flex justify-between items-start mb-6">
-      <div className="w-12 h-12 bg-white border-[2px] border-black flex items-center justify-center text-black group-hover:bg-[#FACC15] transition-colors shadow-[2px_2px_0_0_#000000]">
-        <Icon size={24} strokeWidth={2.5} />
-      </div>
-      <div className={`flex items-center gap-1.5 px-2 py-1 border-[2px] border-black font-bold text-xs shadow-[2px_2px_0_0_#000000] ${isPositive ? 'bg-emerald-400 text-black' : 'bg-red-400 text-black'}`}>
-        {isPositive ? <TrendingUp size={16} strokeWidth={3} /> : <TrendingDown size={16} strokeWidth={3} />}
-        {trend}
-      </div>
-    </div>
-    <div>
-      <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-2 font-bold">{title}</h3>
-      <div className="font-display-lg text-4xl text-black font-black tracking-tight">{value}</div>
-    </div>
-  </motion.div>
-);
+  // Invoice status counts
+  const pendingInvoices = invoices.filter(inv => inv.status === 'pending' || inv.status === 'generated');
+  const paidInvoices = invoices.filter(inv => inv.status === 'paid');
 
-export default function AccountantDashboard() {
+  const pendingCount = pendingInvoices.length;
+  const paidCount = paidInvoices.length;
+  const totalInvoicesCount = invoices.length;
+
+  const totalPayrollCost = invoices.reduce((sum, inv) => sum + inv.amount, 0);
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12">
-      
       {/* Header */}
       <motion.div 
         initial={{ opacity: 0, x: -20 }}
@@ -99,146 +126,149 @@ export default function AccountantDashboard() {
         <div>
           <div className="flex items-center gap-3 mb-3 bg-white border-[2px] border-black inline-flex px-3 py-1 shadow-[2px_2px_0_0_#FACC15]">
             <span className="w-3 h-3 bg-emerald-400 border-[2px] border-black animate-pulse"></span>
-            <span className="text-black font-label-caps text-xs tracking-widest uppercase font-black">System Online</span>
+            <span className="text-black font-label-caps text-xs tracking-widest uppercase font-black">Ledger Online</span>
           </div>
           <h1 className="font-display-lg text-5xl md:text-6xl text-black uppercase font-black tracking-tighter">Command Center</h1>
         </div>
-        <div className="flex items-center gap-4">
-          <button className="text-black font-label-caps text-xs tracking-widest uppercase font-bold hover:underline underline-offset-4 decoration-[2px]">Generate Report</button>
-          <button className="bg-black text-white border-[3px] border-black px-6 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-[#FACC15] hover:text-black transition-colors shadow-[4px_4px_0_0_#000000]">
-            Export Data
-          </button>
-        </div>
+        <button 
+          onClick={fetchData}
+          className="bg-black text-white border-[3px] border-black px-6 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-[#FACC15] hover:text-black transition-colors shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
+        >
+          Sync Ledger
+        </button>
       </motion.div>
 
-      {/* KPI Grid */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <KpiCard title="Total Companies" value="1,248" trend="+12%" icon={Building2} delay={0.1} />
-        <KpiCard title="Active Users" value="42,930" trend="+8%" icon={Users} delay={0.15} />
-        <KpiCard title="Total Invoices" value="148.2K" trend="+24%" icon={FileText} delay={0.2} />
-        <KpiCard title="Revenue Processed" value="$84.2M" trend="+31%" icon={Wallet} delay={0.25} />
-        <KpiCard title="Payroll Executed" value="$12.4M" trend="+18%" icon={Banknote} delay={0.3} />
-        <KpiCard title="System Load" value="24%" trend="-2%" icon={Activity} delay={0.35} isPositive={false} />
-      </div>
-
-      {/* Charts & Feed Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Main Charts Column */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          
-          {/* Revenue Chart */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000]"
-          >
-            <div className="flex justify-between items-center mb-8 border-b-[3px] border-black pb-4">
-              <h2 className="text-black font-display-md text-2xl uppercase font-black tracking-tight">Revenue Trajectory</h2>
-              <button className="bg-[#FACC15] text-black border-[2px] border-black p-2 shadow-[2px_2px_0_0_#000000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"><ChevronRight size={20} strokeWidth={3} /></button>
+        {/* Total Employees */}
+        <div className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15] flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 bg-white border-[2px] border-black flex items-center justify-center text-black shadow-[2px_2px_0_0_#000000]">
+              <Users size={24} />
             </div>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#000000" opacity={0.1} vertical={false} />
-                  <XAxis dataKey="name" axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={{ stroke: '#000', strokeWidth: 2 }} tick={{ fill: '#000', fontSize: 12, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} dy={10} />
-                  <YAxis axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={{ stroke: '#000', strokeWidth: 2 }} tick={{ fill: '#000', fontSize: 12, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
-                  <Bar dataKey="revenue" name="Revenue (M)" fill="#FACC15" stroke="#000" strokeWidth={2} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-
-          {/* Grid for smaller charts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Growth Chart */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15]"
-            >
-              <h2 className="text-black font-display-md text-lg uppercase font-black tracking-tight mb-6 border-b-[2px] border-black pb-2">Company Growth</h2>
-              <div className="h-[180px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={growthData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#000000" opacity={0.1} vertical={false} />
-                    <XAxis dataKey="name" axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#000', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} dy={10} />
-                    <YAxis axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#000', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area type="step" dataKey="companies" name="Companies" stroke="#3b82f6" strokeWidth={4} fillOpacity={1} fill="#3b82f6" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </motion.div>
-
-            {/* Invoices Chart */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15]"
-            >
-              <h2 className="text-black font-display-md text-lg uppercase font-black tracking-tight mb-6 border-b-[2px] border-black pb-2">Invoice Volume</h2>
-              <div className="h-[180px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={invoiceData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#000000" opacity={0.1} vertical={false} />
-                    <XAxis dataKey="name" axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#000', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} dy={10} />
-                    <YAxis axisLine={{ stroke: '#000', strokeWidth: 2 }} tickLine={false} tick={{ fill: '#000', fontSize: 10, fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 'bold' }} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="sent" name="Sent" stroke="#000" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#000' }} />
-                    <Line type="monotone" dataKey="paid" name="Paid" stroke="#10B981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: '#10B981' }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </motion.div>
+            {stats?.trends?.employees && (
+              <span className="bg-emerald-400 text-black border-[2px] border-black px-2 py-0.5 text-xs font-black shadow-[1px_1px_0_0_#000000]">
+                {stats.trends.employees} MoM
+              </span>
+            )}
+          </div>
+          <div>
+            <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Total Active Employees</h3>
+            <div className="font-display-lg text-4xl text-black font-black font-mono">{stats?.totalEmployees || 0}</div>
           </div>
         </div>
 
-        {/* Activity Feed Sidebar */}
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.7 }}
-          className="bg-white border-[3px] border-black p-6 flex flex-col h-full shadow-[6px_6px_0_0_#000000]"
-        >
-          <div className="flex items-center justify-between border-b-[3px] border-black pb-4 mb-6">
-            <h2 className="text-black font-display-md text-2xl uppercase font-black tracking-tight">Live Events</h2>
-            <div className="w-10 h-10 border-[2px] border-black bg-[#FACC15] flex items-center justify-center text-black shadow-[2px_2px_0_0_#000000]">
-              <Clock size={20} strokeWidth={2.5} />
+        {/* Total Payroll Cost */}
+        <div className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15] flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 bg-white border-[2px] border-black flex items-center justify-center text-black shadow-[2px_2px_0_0_#000000]">
+              <Wallet size={24} />
+            </div>
+            {stats?.trends?.payroll && (
+              <span className="bg-emerald-400 text-black border-[2px] border-black px-2 py-0.5 text-xs font-black shadow-[1px_1px_0_0_#000000]">
+                {stats.trends.payroll} MoM
+              </span>
+            )}
+          </div>
+          <div>
+            <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Total Payroll Cost</h3>
+            <div className="font-display-lg text-4xl text-black font-black font-mono">
+              ${totalPayrollCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
-          
-          <div className="flex flex-col gap-6 flex-1 overflow-y-auto pr-2 no-scrollbar">
-            {activities.map((activity, i) => {
-              const Icon = activity.icon;
-              return (
-                <div key={i} className="flex gap-4 group cursor-pointer">
-                  <div className="relative flex flex-col items-center">
-                    <div className={`w-12 h-12 border-[2px] border-black flex items-center justify-center shrink-0 z-10 ${activity.bg} ${activity.color} shadow-[2px_2px_0_0_#000000] group-hover:translate-x-[2px] group-hover:translate-y-[2px] group-hover:shadow-none transition-all`}>
-                      <Icon size={20} strokeWidth={2.5} />
+        </div>
+
+        {/* Invoices Status Tracking */}
+        <div className="bg-white border-[3px] border-black p-6 shadow-[4px_4px_0_0_#FACC15] flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-6">
+            <div className="w-12 h-12 bg-white border-[2px] border-black flex items-center justify-center text-black shadow-[2px_2px_0_0_#000000]">
+              <FileText size={24} />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-2 font-bold">Payroll Invoices Status</h3>
+            <div className="flex gap-4">
+              <div>
+                <span className="text-xs font-bold text-black/60">PAID</span>
+                <div className="font-mono text-2xl font-black text-emerald-600">{paidCount}</div>
+              </div>
+              <div className="border-l-[2px] border-black/20 pl-4">
+                <span className="text-xs font-bold text-black/60">PENDING</span>
+                <div className="font-mono text-2xl font-black text-amber-500">{pendingCount}</div>
+              </div>
+              <div className="border-l-[2px] border-black/20 pl-4">
+                <span className="text-xs font-bold text-black/60">TOTAL</span>
+                <div className="font-mono text-2xl font-black text-black">{totalInvoicesCount}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lower Layout: Activity Log and Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Activity Logs (Takes 2 Columns) */}
+        <div className="lg:col-span-2 bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000] flex flex-col">
+          <h2 className="text-black font-display-md text-2xl uppercase font-black tracking-tight border-b-[3px] border-black pb-4 mb-6">
+            System Live Logs
+          </h2>
+          {logs.length === 0 ? (
+            <div className="py-12 text-center text-black/60 font-mono font-bold">
+              No recent accounting operations found.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-6 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+              {logs.map((log, i) => (
+                <div key={log._id} className="flex gap-4 items-start group">
+                  <div className="relative flex flex-col items-center shrink-0">
+                    <div className="w-10 h-10 border-[2px] border-black bg-[#FACC15] text-black flex items-center justify-center shadow-[2px_2px_0_0_#000000]">
+                      <Activity size={18} />
                     </div>
-                    {i !== activities.length - 1 && (
-                      <div className="absolute top-12 bottom-[-24px] w-[3px] bg-black"></div>
+                    {i !== logs.length - 1 && (
+                      <div className="w-[3px] bg-black h-12 mt-2"></div>
                     )}
                   </div>
                   <div className="flex flex-col pt-1">
-                    <span className="text-black/60 font-label-caps text-xs uppercase font-bold tracking-widest mb-1">{activity.time}</span>
-                    <span className="text-black font-body-md text-sm font-bold leading-snug group-hover:underline decoration-[2px] underline-offset-2">{activity.text}</span>
+                    <span className="text-black/60 font-label-caps text-[10px] uppercase font-black font-mono">
+                      {new Date(log.createdAt).toLocaleString()}
+                    </span>
+                    <span className="text-black font-body-md text-sm font-bold leading-snug group-hover:underline">
+                      {log.description}
+                    </span>
                   </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Quick Operations Guide (Takes 1 Column) */}
+        <div className="bg-[#FACC15] border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000] text-black flex flex-col justify-between">
+          <div>
+            <h2 className="font-display-md text-2xl uppercase font-black border-b-[3px] border-black pb-4 mb-6">
+              Operations Hub
+            </h2>
+            <ul className="space-y-4 font-body-md font-bold">
+              <li className="flex items-start gap-2">
+                <span className="border-[2px] border-black bg-white w-6 h-6 flex items-center justify-center shrink-0 font-mono text-xs">1</span>
+                <span>Add active team members under the Employees tab.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="border-[2px] border-black bg-white w-6 h-6 flex items-center justify-center shrink-0 font-mono text-xs">2</span>
+                <span>Configure financial salary, allowances, and tax rules.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="border-[2px] border-black bg-white w-6 h-6 flex items-center justify-center shrink-0 font-mono text-xs">3</span>
+                <span>Run bulk monthly payroll and auto-generate invoice ledgers.</span>
+              </li>
+            </ul>
           </div>
-
-          <button className="w-full mt-6 bg-white border-[3px] border-black py-3 text-sm font-label-caps uppercase font-black tracking-widest text-black hover:bg-[#FACC15] shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all">
-            View All Logs
-          </button>
-        </motion.div>
-
+          
+          <div className="pt-6 mt-6 border-t-[2px] border-black font-mono text-xs font-black uppercase tracking-wider flex items-center gap-2">
+            <Clock size={16} />
+            <span>Last Sync: {new Date().toLocaleTimeString()}</span>
+          </div>
+        </div>
       </div>
     </div>
   );

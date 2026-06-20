@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Employee, PayrollRecord, ActivityLog } from '../models';
+import { Employee, PayrollRecord, ActivityLog, Payroll } from '../models';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
+import { AccountingService } from '../services/accountingService';
 
 const router = Router();
 
@@ -253,6 +254,73 @@ router.get(
  * Get a single payroll record by ID.
  * Verifies the record belongs to the current company.
  */
+/**
+ * POST /payroll/calculate/:employeeId
+ * Calculates payroll for a single employee and month.
+ */
+router.post(
+  '/calculate/:employeeId',
+  authenticateToken,
+  requireCompany,
+  requireRole(['OWNER', 'ADMIN', 'ACCOUNTANT']),
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      const { month } = req.body;
+      if (!month || typeof month !== 'string') {
+        return res.status(400).json({ message: 'Month is required (format YYYY-MM)' });
+      }
+
+      const payroll = await AccountingService.calculatePayroll(
+        req.params.employeeId,
+        month,
+        req.user!.userId
+      );
+
+      return res.status(200).json({ success: true, payroll });
+    } catch (err: any) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * POST /payroll/generate-monthly
+ * Runs the bulk monthly payroll/invoice run for the company.
+ */
+router.post(
+  '/generate-monthly',
+  authenticateToken,
+  requireCompany,
+  requireRole(['OWNER', 'ADMIN', 'ACCOUNTANT']),
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      const { month } = req.body;
+      if (!month || typeof month !== 'string') {
+        return res.status(400).json({ message: 'Month is required (format YYYY-MM)' });
+      }
+
+      const companyId = req.user!.currentCompanyId as string;
+      const results = await AccountingService.generateMonthlyRun(
+        companyId,
+        month,
+        req.user!.userId
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: `Successfully processed payroll for ${month}`,
+        results
+      });
+    } catch (err: any) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * GET /payroll/:id
+ * Get a single payroll record by ID, OR get all payroll records for a company if ID matches the company ID.
+ */
 router.get(
   '/:id',
   authenticateToken,
@@ -260,22 +328,52 @@ router.get(
   async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
     try {
       const companyId = req.user!.currentCompanyId as string;
-      const record = await PayrollRecord.findById(req.params.id);
+      const { id } = req.params;
 
-      if (!record) {
-        return res.status(404).json({ message: 'Payroll record not found' });
+      // 1. If it matches current company ID, it's fetching company payroll
+      if (id === companyId) {
+        const filter: any = { companyId: id };
+        if (req.user!.role === 'EMPLOYEE') {
+          const employee = await Employee.findOne({ companyId, email: req.user!.email });
+          if (!employee) return res.status(200).json({ success: true, records: [] });
+          filter.employeeId = employee._id;
+        }
+
+        const records = await Payroll.find(filter).populate('employeeId').sort({ createdAt: -1 });
+        return res.status(200).json({ success: true, records });
       }
 
-      if (record.companyId.toString() !== companyId) {
-        return res.status(403).json({ message: 'Forbidden: Record does not belong to your company' });
+      // 2. Check if it's a new Payroll record by ID
+      let record = await Payroll.findById(id).populate('employeeId');
+      if (record) {
+        if (record.companyId.toString() !== companyId) {
+          return res.status(403).json({ message: 'Forbidden: Record does not belong to your company' });
+        }
+        if (req.user!.role === 'EMPLOYEE') {
+          const employee = await Employee.findOne({ companyId, email: req.user!.email });
+          if (!employee || record.employeeId.toString() !== employee._id.toString()) {
+            return res.status(403).json({ message: 'Forbidden: Access denied' });
+          }
+        }
+        return res.status(200).json(record);
       }
 
-      return res.status(200).json(record);
+      // 3. Fallback: try checking if it's an old PayrollRecord by ID
+      const oldRecord = await PayrollRecord.findById(id);
+      if (oldRecord) {
+        if (oldRecord.companyId.toString() !== companyId) {
+          return res.status(403).json({ message: 'Forbidden: Record does not belong to your company' });
+        }
+        return res.status(200).json(oldRecord);
+      }
+
+      return res.status(404).json({ message: 'Payroll record or company not found' });
     } catch (err) {
       next(err);
     }
   }
 );
+
 
 /**
  * PATCH /payroll/:id/status

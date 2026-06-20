@@ -12,15 +12,10 @@ import {
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/accountant-dashboard", icon: Home },
-  { name: "Companies", href: "/accountant-dashboard/companies", icon: Building2 },
-  { name: "Users", href: "/accountant-dashboard/users", icon: Users },
-  { name: "Subscriptions", href: "/accountant-dashboard/subscriptions", icon: CreditCard },
-  { name: "Analytics", href: "/accountant-dashboard/analytics", icon: BarChart2 },
-  { name: "Invoices", href: "/accountant-dashboard/invoices", icon: FileText },
+  { name: "Employees", href: "/accountant-dashboard/employees", icon: Users },
   { name: "Payroll", href: "/accountant-dashboard/payroll", icon: Banknote },
-  { name: "Support", href: "/accountant-dashboard/tickets", icon: Ticket },
-  { name: "Audit", href: "/accountant-dashboard/audit", icon: ScrollText },
-  { name: "Alerts", href: "/accountant-dashboard/notifications", icon: Bell },
+  { name: "Invoices", href: "/accountant-dashboard/invoices", icon: FileText },
+  { name: "Team Invite", href: "/accountant-dashboard/users", icon: Building2 },
   { name: "Settings", href: "/accountant-dashboard/settings", icon: Settings },
 ];
 

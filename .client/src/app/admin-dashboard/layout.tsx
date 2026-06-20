@@ -12,15 +12,10 @@ import {
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/admin-dashboard", icon: Home },
-  { name: "Companies", href: "/admin-dashboard/companies", icon: Building2 },
-  { name: "Users", href: "/admin-dashboard/users", icon: Users },
-  { name: "Subscriptions", href: "/admin-dashboard/subscriptions", icon: CreditCard },
-  { name: "Analytics", href: "/admin-dashboard/analytics", icon: BarChart2 },
-  { name: "Invoices", href: "/admin-dashboard/invoices", icon: FileText },
+  { name: "Employees", href: "/admin-dashboard/employees", icon: Users },
   { name: "Payroll", href: "/admin-dashboard/payroll", icon: Banknote },
-  { name: "Support", href: "/admin-dashboard/tickets", icon: Ticket },
-  { name: "Audit", href: "/admin-dashboard/audit", icon: ScrollText },
-  { name: "Alerts", href: "/admin-dashboard/notifications", icon: Bell },
+  { name: "Invoices", href: "/admin-dashboard/invoices", icon: FileText },
+  { name: "Team Invite", href: "/admin-dashboard/users", icon: Building2 },
   { name: "Settings", href: "/admin-dashboard/settings", icon: Settings },
 ];
 
@@ -66,7 +61,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return;
       }
     } else {
-      setNavItems(NAV_ITEMS);
+      router.push("/accountant-dashboard");
+      return;
     }
 
     setAuthorized(true);
