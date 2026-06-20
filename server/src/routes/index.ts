@@ -14,6 +14,7 @@ import usersRouter from './users';
 import invoiceTemplatesRouter from './invoiceTemplates';
 import publicRouter from './public';
 import clientsRouter from './clients';
+import aiInvoiceRouter from './aiInvoice';
 
 const router = Router();
 
@@ -33,6 +34,7 @@ router.use('/users', usersRouter);
 router.use('/invoice-templates', invoiceTemplatesRouter);
 router.use('/public', publicRouter);
 router.use('/clients', clientsRouter);
+router.use('/ai/invoice', aiInvoiceRouter);
 
 router.get('/health', (req, res) => {
   res.json({ status: 'ok' });

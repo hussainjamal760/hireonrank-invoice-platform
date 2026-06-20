@@ -87,41 +87,63 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
 export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   const doc = new jsPDF();
 
-  // Header / Branding
-  doc.setFillColor(0, 0, 0); // Black header for custom invoices
-  doc.rect(0, 0, 210, 50, 'F');
+  // Draw an elegant top accent bar
+  doc.setFillColor(250, 204, 21); // #FACC15
+  doc.rect(0, 0, 210, 6, 'F');
+
+  // Header Background
+  doc.setFillColor(15, 23, 42); // deep slate/navy (#0F172A)
+  doc.rect(0, 6, 210, 44, 'F');
   
-  doc.setTextColor(250, 204, 21); // #FACC15
-  doc.setFontSize(28);
-  doc.setFont('helvetica', 'bold');
-  doc.text('INVOICE', 15, 30);
-  
+  // Title
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
-  doc.text(invoice.invoiceNumber, 15, 40);
+  doc.setFontSize(26);
+  doc.setFont('helvetica', 'bold');
+  doc.text('INVOICE', 15, 28);
+  
+  // Invoice Number with yellow accent badge
+  doc.setFillColor(250, 204, 21); // #FACC15
+  doc.rect(15, 34, 45, 6, 'F');
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text(invoice.invoiceNumber, 17, 38.5);
 
   // Company Details (From)
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
   doc.text((company?.name || 'Company').toUpperCase(), 195, 25, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
+  doc.setTextColor(203, 213, 225); // slate-300
   doc.text(company?.address || '', 195, 32, { align: 'right' });
   doc.text(company?.country || '', 195, 37, { align: 'right' });
 
   // Client Details (To)
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(10);
+  doc.setTextColor(100, 116, 139); // slate-500
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('BILL TO:', 15, 65);
-  doc.setFont('helvetica', 'normal');
+  
+  doc.setTextColor(15, 23, 42); // dark slate
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
   doc.text((invoice?.clientName || 'Client').toUpperCase(), 15, 72);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105); // slate-600
   doc.text(invoice?.clientEmail || '', 15, 78);
   doc.text(invoice?.clientAddress || '', 15, 84);
 
-  // Invoice Meta
+  // Invoice Meta Info
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('DATE:', 140, 72);
   doc.text('DUE DATE:', 140, 78);
+  
+  doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'normal');
   doc.text(invoice?.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : '', 170, 72);
   doc.text(invoice?.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '', 170, 78);
@@ -131,8 +153,10 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   if (invoice.customFields && invoice.customFields.length > 0) {
     invoice.customFields.forEach((field: any) => {
       doc.setFont('helvetica', 'bold');
+      doc.setTextColor(100, 116, 139);
       doc.text(`${field.label.toUpperCase()}:`, 15, customFieldsStartY);
       doc.setFont('helvetica', 'normal');
+      doc.setTextColor(15, 23, 42);
       doc.text(field.value, 45, customFieldsStartY);
       customFieldsStartY += 6;
     });
@@ -148,11 +172,12 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   ]);
 
   autoTable(doc, {
-    startY: Math.max(110, customFieldsStartY + 5),
+    startY: Math.max(105, customFieldsStartY + 5),
     head: [['Description', 'Qty', 'Unit Price', 'Total']],
     body: body,
-    theme: 'grid',
-    headStyles: { fillColor: [0, 0, 0], textColor: [250, 204, 21] },
+    theme: 'striped',
+    headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
+    styles: { font: 'helvetica', fontSize: 9, cellPadding: 4 },
     columnStyles: {
       1: { halign: 'center' },
       2: { halign: 'right' },
@@ -160,36 +185,77 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
     }
   });
 
-  // Totals
-  const finalY = ((doc as any).lastAutoTable?.finalY || 130) + 10;
-  doc.setFont('helvetica', 'bold');
-  doc.text('SUBTOTAL:', 140, finalY);
-  doc.text(`TAX (${invoice?.taxRate || 0}%):`, 140, finalY + 7);
-  doc.setFontSize(14);
-  doc.text('TOTAL AMOUNT:', 140, finalY + 18);
+  // Totals Summary Box
+  let finalY = ((doc as any).lastAutoTable?.finalY || 130) + 12;
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.text(`$${(invoice?.subtotal || 0).toLocaleString()}`, 195, finalY, { align: 'right' });
-  doc.text(`$${(invoice?.taxAmount || 0).toLocaleString()}`, 195, finalY + 7, { align: 'right' });
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text(`$${(invoice?.totalAmount || 0).toLocaleString()}`, 195, finalY + 18, { align: 'right' });
-
-  // Notes
-  if (invoice.notes) {
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text('NOTES:', 15, finalY + 30);
-    doc.setFont('helvetica', 'normal');
-    doc.text(invoice.notes, 15, finalY + 35, { maxWidth: 100 });
+  // Prevent overlap with footer: if not enough space remains, add a new page
+  if (finalY + 35 > 270) {
+    doc.addPage();
+    // Draw top accent bar on new page for aesthetic consistency
+    doc.setFillColor(250, 204, 21); // #FACC15
+    doc.rect(0, 0, 210, 6, 'F');
+    finalY = 25;
   }
+  
+  doc.setFillColor(248, 250, 252); // slate-50
+  doc.rect(130, finalY - 5, 65, 34, 'F');
+  doc.setDrawColor(226, 232, 240); // slate-200
+  doc.rect(130, finalY - 5, 65, 34, 'S');
+
+  doc.setFontSize(8.5);
+  doc.setTextColor(100, 116, 139); // slate-500
+  doc.setFont('helvetica', 'normal');
+  doc.text('SUBTOTAL:', 135, finalY + 2);
+  doc.text(`TAX (${invoice?.taxRate || 0}%):`, 135, finalY + 8);
+  
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.5);
+  doc.line(130, finalY + 14, 195, finalY + 14);
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text('TOTAL AMOUNT:', 135, finalY + 23);
+
+  // Totals Right Values
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  doc.text(`$${(invoice?.subtotal || 0).toLocaleString()}`, 190, finalY + 2, { align: 'right' });
+  doc.text(`$${(invoice?.taxAmount || 0).toLocaleString()}`, 190, finalY + 8, { align: 'right' });
+  
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(`$${(invoice?.totalAmount || 0).toLocaleString()}`, 190, finalY + 23, { align: 'right' });
+
+  // Notes Box
+  if (invoice.notes) {
+    doc.setFillColor(254, 252, 232); // amber-50 light yellow
+    doc.rect(15, finalY - 5, 100, 34, 'F');
+    doc.setDrawColor(254, 240, 138); // amber-200
+    doc.rect(15, finalY - 5, 100, 34, 'S');
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(133, 77, 14); // amber-800
+    doc.text('NOTES / MEMO:', 20, finalY + 2);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(113, 63, 18);
+    doc.text(invoice.notes, 20, finalY + 8, { maxWidth: 90 });
+  }
+
+  // Footer separator
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.5);
+  doc.line(15, 275, 195, 275);
 
   // Footer
   doc.setFontSize(8);
-  doc.setTextColor(150, 150, 150);
-  doc.text('Thank you for your business.', 105, 285, { align: 'center' });
+  doc.setTextColor(148, 163, 184); // slate-400
+  doc.text('Thank you for your business. For any questions, please contact the issuer.', 105, 282, { align: 'center' });
 
   return doc.output('arraybuffer');
 };

@@ -233,6 +233,9 @@ export interface IInvoice extends Document {
   sentAt?: Date;
   publicLinkToken?: string;
   notes?: string;
+  logoUrl?: string;
+  customFields?: { name: string; value: string }[];
+  employeeIds?: mongoose.Types.ObjectId[];
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
 }
@@ -264,6 +267,9 @@ const InvoiceSchema: Schema = new Schema({
   sentAt: { type: Date },
   publicLinkToken: { type: String, unique: true, sparse: true },
   notes: { type: String },
+  logoUrl: { type: String },
+  customFields: { type: [Schema.Types.Mixed], default: [] },
+  employeeIds: [{ type: Schema.Types.ObjectId, ref: 'Employee' }],
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now }
 });

@@ -7,7 +7,7 @@ import {
   Home, Building2, Users, CreditCard, BarChart2, 
   FileText, Banknote, Ticket, ScrollText, Bell, 
   Settings, Menu, X, Command,
-  Zap
+  Zap, Sparkles
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { name: "Employees", href: "/accountant-dashboard/employees", icon: Users },
   { name: "Payroll", href: "/accountant-dashboard/payroll", icon: Banknote },
   { name: "Invoices", href: "/accountant-dashboard/invoices", icon: FileText },
+  { name: "AI Invoice", href: "/accountant-dashboard/ai-invoice", icon: Sparkles },
   { name: "Team Invite", href: "/accountant-dashboard/users", icon: Building2 },
   { name: "Settings", href: "/accountant-dashboard/settings", icon: Settings },
 ];

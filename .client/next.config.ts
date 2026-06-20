@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const nextConfig: any = {
   /* config options here */
   allowedDevOrigins: ['192.168.100.4'],
   experimental: {
