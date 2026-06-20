@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Employee, Invoice, PayrollRecord, ActivityLog, UserCompany } from '../models';
+import { Employee, Invoice, PayrollInvoice, ActivityLog, UserCompany } from '../models';
 import mongoose from 'mongoose';
 import { authenticateToken, requireCompany, AuthRequest } from '../middleware/auth';
 
@@ -60,9 +60,9 @@ router.get(
           { $match: { companyId: companyId, status: 'SENT' } },
           { $group: { _id: null, total: { $sum: '$totalAmount' } } }
         ]),
-        PayrollRecord.aggregate([
-          { $match: { companyId: companyId } },
-          { $group: { _id: null, total: { $sum: '$netPay' } } }
+        PayrollInvoice.aggregate([
+          { $match: { companyId: companyId, status: 'paid' } },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
         ]),
         UserCompany.countDocuments({ companyId })
       ]);
@@ -90,9 +90,9 @@ router.get(
           { $match: { companyId: companyId, status: 'SENT', issueDate: { $gte: currentMonthStart } } },
           { $group: { _id: null, total: { $sum: '$totalAmount' } } }
         ]),
-        PayrollRecord.aggregate([
-          { $match: { companyId: companyId, createdAt: { $gte: currentMonthStart } } },
-          { $group: { _id: null, total: { $sum: '$netPay' } } }
+        PayrollInvoice.aggregate([
+          { $match: { companyId: companyId, status: 'paid', createdAt: { $gte: currentMonthStart } } },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
         ]),
         UserCompany.countDocuments({ companyId, createdAt: { $gte: currentMonthStart } })
       ]);
@@ -122,9 +122,9 @@ router.get(
           { $match: { companyId: companyId, status: 'SENT', issueDate: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
           { $group: { _id: null, total: { $sum: '$totalAmount' } } }
         ]),
-        PayrollRecord.aggregate([
-          { $match: { companyId: companyId, createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
-          { $group: { _id: null, total: { $sum: '$netPay' } } }
+        PayrollInvoice.aggregate([
+          { $match: { companyId: companyId, status: 'paid', createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
         ]),
         UserCompany.countDocuments({
           companyId,

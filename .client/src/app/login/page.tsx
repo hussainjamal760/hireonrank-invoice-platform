@@ -47,9 +47,22 @@ export default function Login() {
 
   // Google OAuth Initialization (Safe Single-Init Guard)
   useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('token')) {
-      router.push('/accountant-dashboard');
-      return;
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const payload = token.split('.')[1];
+          const decoded = JSON.parse(atob(payload));
+          if (decoded.role === 'EMPLOYEE') {
+            router.push('/employee-dashboard');
+          } else {
+            router.push('/accountant-dashboard');
+          }
+        } catch {
+          router.push('/accountant-dashboard');
+        }
+        return;
+      }
     }
 
     const loadGoogleScript = () => {
@@ -127,7 +140,11 @@ export default function Login() {
       } else if (data.state === "NO_COMPANY_STATE") {
         router.push("/create-company");
       } else {
-        router.push("/accountant-dashboard");
+        if (data.role === 'EMPLOYEE') {
+          router.push("/employee-dashboard");
+        } else {
+          router.push("/accountant-dashboard");
+        }
       }
     } catch (err: any) {
       setError(err.message || "Failed to log in with Google");
@@ -155,7 +172,11 @@ export default function Login() {
       if (inviteToken) {
         router.push(`/employee-details?invite_token=${inviteToken}`);
       } else {
-        router.push("/accountant-dashboard");
+        if (data.role === 'EMPLOYEE') {
+          router.push("/employee-dashboard");
+        } else {
+          router.push("/accountant-dashboard");
+        }
       }
     } catch (err: any) {
       setError(err.message || "Failed to select company");
@@ -221,7 +242,11 @@ export default function Login() {
       } else if (data.state === "NO_COMPANY_STATE") {
         router.push("/create-company");
       } else {
-        router.push("/accountant-dashboard");
+        if (data.role === 'EMPLOYEE') {
+          router.push("/employee-dashboard");
+        } else {
+          router.push("/accountant-dashboard");
+        }
       }
     } catch (err: any) {
       setError(err.message || "OTP verification failed");
