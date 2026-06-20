@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Users, UserPlus, Mail, Shield, Copy, Trash2, 
-  CheckCircle2, ShieldAlert, Key, Clipboard
+  CheckCircle2, ShieldAlert, Key, Clipboard, UploadCloud, FileSpreadsheet, XCircle
 } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface Member {
   id: string;
@@ -41,7 +42,105 @@ export default function UsersPage() {
   const [inviteLoading, setInviteLoading] = useState(false);
 
   // UI state
-  const [activeTab, setActiveTab] = useState<"members" | "invites">("members");
+  const [activeTab, setActiveTab] = useState<"members" | "invites" | "batch">("members");
+
+  // Batch Invite State
+  const [parsedEmails, setParsedEmails] = useState<{ email: string; valid: boolean; reason?: string }[]>([]);
+  const [batchRole, setBatchRole] = useState("EMPLOYEE");
+  const [batchLoading, setBatchLoading] = useState(false);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError("");
+    setSuccess("");
+    
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: "binary" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as string[][];
+
+        // Flatten and extract emails
+        let extracted: string[] = [];
+        data.forEach(row => {
+          row.forEach(cell => {
+            if (typeof cell === 'string' && cell.includes('@')) {
+              extracted.push(cell.trim().toLowerCase());
+            }
+          });
+        });
+
+        // Remove exact duplicates from the file itself
+        extracted = Array.from(new Set(extracted));
+
+        // Validate emails
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        const validated = extracted.map(email => {
+          if (!emailRegex.test(email)) {
+            return { email, valid: false, reason: "Invalid format" };
+          }
+          // Check if already member
+          if (members.some(m => m.user?.email === email)) {
+            return { email, valid: false, reason: "Already a member" };
+          }
+          // Check if already invited
+          if (invitations.some(inv => inv.email === email)) {
+            return { email, valid: false, reason: "Already invited" };
+          }
+          return { email, valid: true };
+        });
+
+        if (validated.length === 0) {
+          setError("No emails found in the uploaded file.");
+        } else {
+          setParsedEmails(validated);
+        }
+      } catch (err: any) {
+        setError("Error parsing the file. Please ensure it is a valid Excel or CSV file.");
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleBatchSend = async () => {
+    const validEmails = parsedEmails.filter(p => p.valid).map(p => p.email);
+    if (validEmails.length === 0) {
+      return setError("No valid emails to send invitations to.");
+    }
+
+    setBatchLoading(true);
+    setError("");
+    setSuccess("");
+
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch("/api/companies/invite/batch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ emails: validEmails, role: batchRole })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to send batch invitations");
+
+      setSuccess(`Successfully sent ${data.results.successful.length} invitations. Failed: ${data.results.failed.length}`);
+      setParsedEmails([]);
+      fetchData(); // Refetch
+    } catch (err: any) {
+      setError(err.message || "Failed to send batch invitations");
+    } finally {
+      setBatchLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -277,9 +376,6 @@ export default function UsersPage() {
                     className="w-full bg-[#f6f3ec] text-[#1c1c18] border-[3px] border-on-background pl-10 pr-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-[#facc15] focus:translate-x-[2px] focus:translate-y-[2px] transition-all appearance-none cursor-pointer"
                   >
                     <option value="EMPLOYEE">Employee</option>
-                    <option value="ACCOUNTANT">Accountant</option>
-                    <option value="ADMIN">Admin</option>
-                    <option value="OWNER">Owner</option>
                   </select>
                   <Shield className="absolute left-3 top-3.5 text-black/50" size={18} />
                 </div>
@@ -320,6 +416,16 @@ export default function UsersPage() {
                 }`}
               >
                 Pending Invitations ({pendingInvitesCount})
+              </button>
+              <button
+                onClick={() => setActiveTab("batch")}
+                className={`px-6 py-3 font-label-caps uppercase font-bold text-sm tracking-wider border-r-[3px] border-black transition-all ${
+                  activeTab === "batch"
+                    ? "bg-[#FACC15] text-black"
+                    : "bg-white text-black/60 hover:bg-[#FACC15]/20"
+                }`}
+              >
+                Batch Invite
               </button>
             </div>
 
@@ -379,55 +485,123 @@ export default function UsersPage() {
                   </table>
                 </div>
               )
-            ) : invitations.length === 0 ? (
-              <div className="py-8 text-center text-black/60 font-bold font-mono">
-                No pending invitations found.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-left">
-                  <thead>
-                    <tr className="bg-[#FACC15] border-b-[3px] border-black font-label-caps text-xs uppercase font-black text-black">
-                      <th className="p-4 border-r-[2px] border-black">Email</th>
-                      <th className="p-4 border-r-[2px] border-black">Invited As</th>
-                      <th className="p-4 border-r-[2px] border-black">Date Sent</th>
-                      <th className="p-4 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y-[1px] divide-black font-mono text-sm">
-                    {invitations.map((inv) => (
-                      <tr key={inv.id} className="hover:bg-[#FACC15]/10 text-black">
-                        <td className="p-4 border-r-[2px] border-black font-bold text-xs">{inv.email}</td>
-                        <td className="p-4 border-r-[2px] border-black">
-                          <span className="bg-[#e2e2e2] text-black border-[2px] border-black px-2 py-0.5 text-xs font-black">
-                            {inv.role}
-                          </span>
-                        </td>
-                        <td className="p-4 border-r-[2px] border-black font-bold text-xs">
-                          {new Date(inv.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="p-4 text-center flex items-center justify-center gap-3">
-                          <button
-                            onClick={() => handleCopyLink(inv.token)}
-                            className="text-blue-600 hover:text-blue-500 hover:scale-110 transition-transform bg-transparent border-0 cursor-pointer"
-                            title="Copy Invitation Link"
-                          >
-                            <Copy size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleCancelInvite(inv.id)}
-                            className="text-red-600 hover:text-red-500 hover:scale-110 transition-transform bg-transparent border-0 cursor-pointer"
-                            title="Cancel Invitation"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </td>
+            ) : activeTab === "invites" ? (
+              invitations.length === 0 ? (
+                <div className="py-8 text-center text-black/60 font-bold font-mono">
+                  No pending invitations found.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-left">
+                    <thead>
+                      <tr className="bg-[#FACC15] border-b-[3px] border-black font-label-caps text-xs uppercase font-black text-black">
+                        <th className="p-4 border-r-[2px] border-black">Email</th>
+                        <th className="p-4 border-r-[2px] border-black">Invited As</th>
+                        <th className="p-4 border-r-[2px] border-black">Date Sent</th>
+                        <th className="p-4 text-center">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y-[1px] divide-black font-mono text-sm">
+                      {invitations.map((inv) => (
+                        <tr key={inv.id} className="hover:bg-[#FACC15]/10 text-black">
+                          <td className="p-4 border-r-[2px] border-black font-bold text-xs">{inv.email}</td>
+                          <td className="p-4 border-r-[2px] border-black">
+                            <span className="bg-[#e2e2e2] text-black border-[2px] border-black px-2 py-0.5 text-xs font-black">
+                              {inv.role}
+                            </span>
+                          </td>
+                          <td className="p-4 border-r-[2px] border-black font-bold text-xs">
+                            {new Date(inv.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="p-4 text-center flex items-center justify-center gap-3">
+                            <button
+                              onClick={() => handleCopyLink(inv.token)}
+                              className="text-blue-600 hover:text-blue-500 hover:scale-110 transition-transform bg-transparent border-0 cursor-pointer"
+                              title="Copy Invitation Link"
+                            >
+                              <Copy size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleCancelInvite(inv.id)}
+                              className="text-red-600 hover:text-red-500 hover:scale-110 transition-transform bg-transparent border-0 cursor-pointer"
+                              title="Cancel Invitation"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            ) : activeTab === "batch" ? (
+              <div className="flex flex-col gap-6">
+                <div className="border-[3px] border-dashed border-black bg-[#f6f3ec] p-8 text-center flex flex-col items-center justify-center gap-4 relative">
+                  <FileSpreadsheet size={48} className="text-black/50" />
+                  <div>
+                    <h3 className="font-headline-md text-xl uppercase font-black">Upload Spreadsheet</h3>
+                    <p className="font-body-md text-black/60 font-bold">Accepts .xlsx and .csv files.</p>
+                  </div>
+                  <input 
+                    type="file" 
+                    accept=".xlsx, .xls, .csv" 
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="bg-black text-white px-6 py-2 font-label-caps uppercase font-black text-sm shadow-[2px_2px_0_0_#FACC15]">
+                    Browse Files
+                  </div>
+                </div>
+
+                {parsedEmails.length > 0 && (
+                  <div className="mt-4 border-[3px] border-black bg-white shadow-[4px_4px_0_0_#000000]">
+                    <div className="flex justify-between items-center p-4 border-b-[3px] border-black bg-[#f6f3ec]">
+                      <div className="font-headline-md font-black uppercase flex items-center gap-2">
+                        <Users size={18} /> Preview Emails
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <select
+                          value={batchRole}
+                          onChange={(e) => setBatchRole(e.target.value)}
+                          className="bg-white border-[2px] border-black px-3 py-1 font-label-caps uppercase text-xs font-bold focus:outline-none"
+                        >
+                          <option value="EMPLOYEE">Role: Employee</option>
+                        
+                        </select>
+                        <button
+                          onClick={handleBatchSend}
+                          disabled={batchLoading || parsedEmails.filter(p => p.valid).length === 0}
+                          className="bg-[#FACC15] text-black border-[2px] border-black px-4 py-1.5 font-label-caps uppercase text-xs font-black hover:bg-black hover:text-[#FACC15] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {batchLoading ? "Sending..." : `Send ${parsedEmails.filter(p => p.valid).length} Invites`}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="max-h-[400px] overflow-y-auto">
+                      <table className="w-full border-collapse text-left">
+                        <tbody className="divide-y-[1px] divide-black font-mono text-sm">
+                          {parsedEmails.map((item, idx) => (
+                            <tr key={idx} className={item.valid ? "bg-[#E5F6E5]/30 text-black" : "bg-[#FFE5E5]/30 text-black"}>
+                              <td className="p-3 font-bold border-r-[2px] border-black w-10 text-center">
+                                {item.valid ? <CheckCircle2 size={18} className="text-[#008A00]" /> : <XCircle size={18} className="text-[#D32F2F]" />}
+                              </td>
+                              <td className={`p-3 font-bold border-r-[2px] border-black ${item.valid ? "text-black" : "text-[#D32F2F] line-through"}`}>
+                                {item.email}
+                              </td>
+                              <td className="p-3 font-bold text-xs uppercase">
+                                {item.valid ? <span className="text-[#008A00]">Valid</span> : <span className="text-[#D32F2F]">{item.reason}</span>}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
