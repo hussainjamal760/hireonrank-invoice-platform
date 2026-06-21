@@ -10,6 +10,7 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
 import { useCurrencyConverter } from "@/components/useCurrencyConverter";
+import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -127,14 +128,7 @@ export default function AccountantDashboard() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="w-12 h-12 text-[#FACC15] animate-spin" strokeWidth={3} />
-        <span className="font-label-caps text-lg uppercase tracking-widest text-[#735c00] animate-pulse">
-          Querying Ledger Data...
-        </span>
-      </div>
-    );
+    return <DashboardSkeleton layout="accountant" kpiCount={4} />;
   }
 
   // Invoice status counts

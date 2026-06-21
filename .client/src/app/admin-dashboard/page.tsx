@@ -12,6 +12,7 @@ import {
   BarChart, Bar, LineChart, Line
 } from "recharts";
 import { useCurrencyConverter } from "@/components/useCurrencyConverter";
+import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 
 const iconMap: Record<string, any> = {
   FileText: FileText,
@@ -149,13 +150,7 @@ export default function AdminDashboard() {
   }, [router]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <span className="font-display-lg text-lg uppercase tracking-widest text-black animate-pulse">
-          Loading Data...
-        </span>
-      </div>
-    );
+    return <DashboardSkeleton layout="admin" kpiCount={6} />;
   }
 
   const displayCurrency = (val: number | undefined) => {

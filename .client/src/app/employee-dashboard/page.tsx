@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { DollarSign, FileText, Calendar, Wallet, Banknote, ShieldAlert, Award, Scissors } from "lucide-react";
 import Link from "next/link";
+import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 
 export default function EmployeeDashboard() {
   const [profile, setProfile] = useState<any>(null);
@@ -47,13 +48,7 @@ export default function EmployeeDashboard() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <span className="font-label-caps tracking-widest uppercase text-xl text-black/40 animate-pulse">
-          Loading Dashboard...
-        </span>
-      </div>
-    );
+    return <DashboardSkeleton layout="employee" kpiCount={4} />;
   }
 
   if (error) {
