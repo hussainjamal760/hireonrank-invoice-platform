@@ -30,7 +30,7 @@ interface Allowance {
 
 interface TaxRule {
   name: string;
-  rate: number; // percentage
+  rate: number; 
 }
 
 interface EmployeeProfile {
