@@ -70,7 +70,7 @@ router.get('/employees', authenticateToken, requireCompany, async (req: AuthRequ
     const companyId = req.user!.currentCompanyId as string;
     const { EmployeeProfile } = await import('../models');
     
-    const employees = await Employee.find({ companyId }).lean();
+    const employees = await Employee.find({ companyId, status: 'ACTIVE' }).lean();
     const profiles = await EmployeeProfile.find({ companyId }).lean();
     
     const employeesWithCurrency = employees.map(emp => {

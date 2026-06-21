@@ -738,6 +738,26 @@ router.delete(
 
       await UserCompany.findByIdAndDelete(membership._id);
 
+      // Deactivate the corresponding Employee record for this user in this company
+      try {
+        const userDoc = await User.findById(membership.userId);
+        if (userDoc) {
+          const employee = await Employee.findOne({
+            companyId: req.user.currentCompanyId,
+            $or: [
+              { userId: membership.userId },
+              { email: userDoc.email.trim().toLowerCase() }
+            ]
+          });
+          if (employee) {
+            employee.status = 'INACTIVE';
+            await employee.save();
+          }
+        }
+      } catch (err) {
+        console.error('Error deactivating employee record for removed member:', err);
+      }
+
       return res.status(200).json({ success: true, message: 'Member removed successfully' });
     } catch (err) {
       next(err);
