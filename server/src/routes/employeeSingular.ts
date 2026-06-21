@@ -221,7 +221,11 @@ router.get(
         };
       });
 
-      const allPayrolls = [...mappedNewRecords, ...mappedOldRecords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const filteredOldRecords = mappedOldRecords.filter((oldR: any) => 
+        !mappedNewRecords.some((newR: any) => newR.employeeId.toString() === oldR.employeeId.toString() && newR.month === oldR.month)
+      );
+
+      const allPayrolls = [...mappedNewRecords, ...filteredOldRecords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       return res.status(200).json({
         success: true,
