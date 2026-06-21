@@ -268,7 +268,7 @@ export default function AccountantDashboard() {
                 <Tooltip 
                   cursor={{ fill: 'rgba(0,0,0,0.05)' }}
                   contentStyle={{ backgroundColor: '#ffffff', border: '3px solid #000000', borderRadius: 0, boxShadow: '4px 4px 0 0 #FACC15', fontWeight: 'bold' }}
-                  formatter={(value: number) => [displayCurrency(value), "Revenue"]}
+                  formatter={(value: any) => [displayCurrency(value), "Revenue"]}
                 />
                 <Bar dataKey="revenue" fill="#000000" stroke="#000000" strokeWidth={2} radius={[4, 4, 0, 0]} />
               </BarChart>
