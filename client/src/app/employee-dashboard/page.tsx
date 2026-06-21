@@ -59,22 +59,27 @@ export default function EmployeeDashboard() {
     );
   }
 
-  let filteredProfiles = globalData?.profiles || [];
+  let filteredEmployees = globalData?.employees || [];
   if (selectedCompanyId !== "ALL") {
-    filteredProfiles = filteredProfiles.filter((p: any) => p.companyId === selectedCompanyId);
+    filteredEmployees = filteredEmployees.filter((e: any) => e.companyId === selectedCompanyId);
   }
 
-  const primaryCurrency = filteredProfiles[0]?.currency || 'USD';
+  const primaryCurrency = globalData?.profiles?.[0]?.currency || 'USD';
   const currencySymbol = getCurrencySymbol(primaryCurrency);
 
   let baseSalary = 0;
   let totalAllowances = 0;
   let totalTaxes = 0;
 
-  filteredProfiles.forEach((profile: any) => {
-    baseSalary += profile.baseSalary || 0;
-    totalAllowances += (profile.allowances || []).reduce((sum: number, a: any) => sum + a.amount, 0) + (profile.bonusThisMonth || 0);
-    totalTaxes += (profile.taxRules || []).reduce((sum: number, t: any) => sum + ((profile.baseSalary || 0) * (t.rate / 100)), 0) + (profile.deductionThisMonth || 0);
+  filteredEmployees.forEach((employee: any) => {
+    baseSalary += employee.salary || 0;
+    
+    // Find matching profile for allowances and taxes
+    const profile = (globalData?.profiles || []).find((p: any) => p.employeeId === employee._id);
+    if (profile) {
+      totalAllowances += (profile.allowances || []).reduce((sum: number, a: any) => sum + a.amount, 0) + (profile.bonusThisMonth || 0);
+      totalTaxes += (profile.taxRules || []).reduce((sum: number, t: any) => sum + ((employee.salary || 0) * (t.rate / 100)), 0) + (profile.deductionThisMonth || 0);
+    }
   });
 
   const netSalary = Math.max(0, baseSalary + totalAllowances - totalTaxes);

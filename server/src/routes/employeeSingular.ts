@@ -133,7 +133,13 @@ router.get(
       const companyId = req.user!.currentCompanyId as string;
       const email = req.user!.email.toLowerCase();
 
-      const employee = await Employee.findOne({ email, companyId });
+      let employee;
+      if (companyId === 'GLOBAL') {
+        employee = await Employee.findOne({ email });
+      } else {
+        employee = await Employee.findOne({ email, companyId });
+      }
+
       if (!employee) {
         return res.status(404).json({ message: 'Employee record not found for this user' });
       }
