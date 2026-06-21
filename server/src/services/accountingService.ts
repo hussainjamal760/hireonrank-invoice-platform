@@ -57,6 +57,22 @@ export class AccountingService {
       throw new Error('No active employees found for this company');
     }
 
+    const company = await Company.findById(companyId);
+    const companyName = company ? company.name : 'Our Company';
+
+    const formatMonthToPeriod = (monthStr: string) => {
+      const parts = monthStr.split('-');
+      if (parts.length === 2) {
+        const year = parts[0];
+        const monthVal = parseInt(parts[1], 10);
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        if (monthVal >= 1 && monthVal <= 12) {
+          return `${months[monthVal - 1]} ${year}`;
+        }
+      }
+      return monthStr;
+    };
+
     const results = [];
     for (const employee of employees) {
       try {
@@ -85,6 +101,25 @@ export class AccountingService {
           netSalary: payroll.netSalary,
           invoiceNumber
         });
+
+        // Send notification email immediately
+        try {
+          const { sendPayrollEmail } = await import('../utils/email');
+          const profile = await EmployeeProfile.findOne({ employeeId: employee._id });
+          const currency = profile ? profile.currency : 'USD';
+          const period = formatMonthToPeriod(month);
+
+          await sendPayrollEmail(
+            employee.email,
+            employee.name,
+            period,
+            payroll.netSalary,
+            currency,
+            companyName
+          );
+        } catch (emailErr) {
+          console.error(`Failed to send payroll email to ${employee.email}:`, emailErr);
+        }
       } catch (err: any) {
         console.error(`Failed to process payroll run for employee ${employee._id}:`, err);
       }
