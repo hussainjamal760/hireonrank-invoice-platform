@@ -69,35 +69,6 @@ export default function Signup() {
       router.push('/accountant-dashboard');
       return;
     }
-
-    const loadGoogleScript = () => {
-      if ((window as any).googleAuthInitialized) return;
-
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        if ((window as any).google && !(window as any).googleAuthInitialized) {
-          try {
-            (window as any).google.accounts.id.initialize({
-              client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "your-google-client-id",
-              callback: handleGoogleLoginResponse,
-            });
-            (window as any).googleAuthInitialized = true;
-            (window as any).google.accounts.id.renderButton(
-              document.getElementById("google-signup-btn"),
-              { theme: "outline", size: "large", width: 400 }
-            );
-          } catch (e) {
-            console.warn("Google initialization skipped/already initialized", e);
-          }
-        }
-      };
-      document.body.appendChild(script);
-    };
-
-    loadGoogleScript();
   }, [router]);
 
   const handleApiResponse = async (res: Response) => {
@@ -121,29 +92,7 @@ export default function Signup() {
     return data;
   };
 
-  const handleGoogleLoginResponse = async (response: any) => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(`/api/auth/google-login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken: response.credential }),
-      });
 
-      const data = await handleApiResponse(res);
-      localStorage.setItem("token", data.token);
-      if (inviteToken) {
-        router.push(`/join?token=${inviteToken}`);
-      } else {
-        router.push("/setup-company");
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to sign up with Google");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSendOtp = async (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
@@ -337,9 +286,7 @@ export default function Signup() {
             </button>
           </motion.form>
 
-          <div className="mt-2 flex flex-col items-center gap-4">
-            <div id="google-signup-btn" className="w-full flex justify-center"></div>
-          </div>
+
 
           <motion.div 
             initial={{ opacity: 0 }}

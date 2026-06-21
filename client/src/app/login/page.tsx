@@ -53,7 +53,7 @@ export default function Login() {
     }
   }, [router]);
 
-  // Google OAuth Initialization (Safe Single-Init Guard)
+  // Check auth token and redirect accordingly
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
@@ -81,36 +81,6 @@ export default function Login() {
         return;
       }
     }
-
-    const loadGoogleScript = () => {
-      // Check if already loaded and initialized
-      if ((window as any).googleAuthInitialized) return;
-
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        if ((window as any).google && !(window as any).googleAuthInitialized) {
-          try {
-            (window as any).google.accounts.id.initialize({
-              client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "your-google-client-id",
-              callback: handleGoogleLoginResponse,
-            });
-            (window as any).googleAuthInitialized = true;
-            (window as any).google.accounts.id.renderButton(
-              document.getElementById("google-signin-btn"),
-              { theme: "outline", size: "large", width: 400 }
-            );
-          } catch (e) {
-            console.warn("Google initialization skipped/already initialized", e);
-          }
-        }
-      };
-      document.body.appendChild(script);
-    };
-
-    loadGoogleScript();
   }, [router]);
 
   const handleApiResponse = async (res: Response) => {
@@ -134,50 +104,7 @@ export default function Login() {
     return data;
   };
 
-  const handleGoogleLoginResponse = async (response: any) => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(`/api/auth/google-login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken: response.credential }),
-      });
 
-      const data = await handleApiResponse(res);
-
-      if (data.state === "BANNED_STATE") {
-        localStorage.removeItem("token");
-        setError(data.message);
-        return;
-      }
-
-      localStorage.setItem("token", data.token);
-
-      if (data.state === "MULTIPLE_COMPANIES_STATE") {
-        setMultiCompanyData(data.companies);
-        return;
-      }
-
-      if (inviteToken) {
-        router.push(`/join?token=${inviteToken}`);
-      } else if (data.state === "NO_COMPANY_STATE") {
-        router.push("/setup-company");
-      } else {
-        if (data.role === 'EMPLOYEE') {
-          router.push("/employee-dashboard");
-        } else if (data.role === 'ADMIN') {
-          router.push("/admin-dashboard");
-        } else {
-          router.push("/accountant-dashboard");
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to log in with Google");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCompanySelect = async (companyId: string) => {
     setLoading(true);
@@ -418,10 +345,7 @@ export default function Login() {
           </motion.form>
           )}
 
-          {/* Social Sign-in section */}
-          <div className="mt-2 flex flex-col items-center gap-4">
-            <div id="google-signin-btn" className="w-full flex justify-center"></div>
-          </div>
+
 
           <motion.div 
             initial={{ opacity: 0 }}
