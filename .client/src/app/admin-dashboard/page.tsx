@@ -11,6 +11,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, LineChart, Line
 } from "recharts";
+import { useCurrencyConverter } from "@/components/useCurrencyConverter";
 
 const iconMap: Record<string, any> = {
   FileText: FileText,
@@ -77,6 +78,8 @@ const KpiCard = ({ title, value, trend, icon: Icon, delay, isPositive = true }: 
 export default function AdminDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [preferredCurrency, setPreferredCurrency] = useState("USD");
+  const { convert, formatCurrency: formatConvertedCurrency } = useCurrencyConverter();
   
   const [stats, setStats] = useState({
     totalCompanies: 0,
@@ -106,10 +109,11 @@ export default function AdminDashboard() {
 
         const headers = { "Authorization": `Bearer ${token}` };
 
-        const [statsRes, chartsRes, actRes] = await Promise.all([
+        const [statsRes, chartsRes, actRes, profileRes] = await Promise.all([
           fetch("/api/admin/stats", { headers }),
           fetch("/api/admin/charts", { headers }),
-          fetch("/api/admin/activity", { headers })
+          fetch("/api/admin/activity", { headers }),
+          fetch("/api/users/profile", { headers })
         ]);
 
         if (statsRes.ok) {
@@ -125,6 +129,13 @@ export default function AdminDashboard() {
         if (actRes.ok) {
           const data = await actRes.json();
           setActivities(data);
+        }
+
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          if (profileData.user?.preferredCurrency) {
+            setPreferredCurrency(profileData.user.preferredCurrency);
+          }
         }
 
         setLoading(false);
@@ -147,10 +158,10 @@ export default function AdminDashboard() {
     );
   }
 
-  const formatCurrency = (val: number) => {
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
-    if (val >= 1000) return `$${(val / 1000).toFixed(1)}K`;
-    return `$${val}`;
+  const displayCurrency = (val: number | undefined) => {
+    if (!val) return formatConvertedCurrency(0, preferredCurrency);
+    const converted = convert(val, "USD", preferredCurrency);
+    return formatConvertedCurrency(converted, preferredCurrency);
   };
 
   const formatNumber = (val: number) => {
@@ -188,8 +199,8 @@ export default function AdminDashboard() {
         <KpiCard title="Total Companies" value={formatNumber(stats.totalCompanies)} trend="+12%" icon={Building2} delay={0.1} />
         <KpiCard title="Active Users" value={formatNumber(stats.totalUsers)} trend="+8%" icon={Users} delay={0.15} />
         <KpiCard title="Total Invoices" value={formatNumber(stats.totalInvoices)} trend="+24%" icon={FileText} delay={0.2} />
-        <KpiCard title="Revenue Processed" value={formatCurrency(stats.totalRevenue)} trend="+31%" icon={Wallet} delay={0.25} />
-        <KpiCard title="Payroll Executed" value={formatCurrency(stats.totalPayroll)} trend="+18%" icon={Banknote} delay={0.3} />
+        <KpiCard title="Revenue Processed" value={displayCurrency(stats.totalRevenue)} trend="+31%" icon={Wallet} delay={0.25} />
+        <KpiCard title="Payroll Executed" value={displayCurrency(stats.totalPayroll)} trend="+18%" icon={Banknote} delay={0.3} />
         <KpiCard title="System Load" value={`${stats.systemLoad}%`} trend="Normal" icon={Activity} delay={0.35} isPositive={true} />
       </div>
 

@@ -9,6 +9,7 @@ import {
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
+import { useCurrencyConverter } from "@/components/useCurrencyConverter";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -48,6 +49,8 @@ export default function AccountantDashboard() {
   const [invoiceChart, setInvoiceChart] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [preferredCurrency, setPreferredCurrency] = useState("USD");
+  const { convert, formatCurrency: formatConvertedCurrency, loading: currencyLoading } = useCurrencyConverter();
 
   const fetchData = async () => {
     const token = localStorage.getItem("token");
@@ -95,6 +98,17 @@ export default function AccountantDashboard() {
         }
       }
 
+      // 6. Fetch user profile for preferred currency
+      const profileRes = await fetch("/api/users/profile", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+        if (profileData.user?.preferredCurrency) {
+          setPreferredCurrency(profileData.user.preferredCurrency);
+        }
+      }
+
       setStats(statsData);
       setLogs(Array.isArray(activityData) ? activityData : []);
       setRevenueChart(Array.isArray(revenueChartData) ? revenueChartData : []);
@@ -133,11 +147,10 @@ export default function AccountantDashboard() {
 
   const totalPayrollCost = invoices.reduce((sum, inv) => sum + inv.amount, 0);
 
-  const formatCurrency = (val: number | undefined) => {
-    if (!val) return '$0.00';
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
-    if (val >= 1000) return `$${(val / 1000).toFixed(1)}K`;
-    return `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const displayCurrency = (val: number | undefined) => {
+    if (!val) return formatConvertedCurrency(0, preferredCurrency, true);
+    const converted = convert(val, "USD", preferredCurrency);
+    return formatConvertedCurrency(converted, preferredCurrency, true);
   };
 
   return (
@@ -180,7 +193,7 @@ export default function AccountantDashboard() {
           <div>
             <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Collected Revenue</h3>
             <div className="font-display-lg text-3xl xl:text-4xl text-black font-black font-mono">
-              {formatCurrency(stats?.totalRevenue)}
+              {displayCurrency(stats?.totalRevenue)}
             </div>
           </div>
         </div>
@@ -200,7 +213,7 @@ export default function AccountantDashboard() {
           <div>
             <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Pending Revenue</h3>
             <div className="font-display-lg text-3xl xl:text-4xl text-black font-black font-mono">
-              {formatCurrency(stats?.pendingRevenue)}
+              {displayCurrency(stats?.pendingRevenue)}
             </div>
           </div>
         </div>
@@ -238,7 +251,7 @@ export default function AccountantDashboard() {
           <div>
             <h3 className="text-black/60 font-label-caps uppercase text-xs tracking-widest mb-1 font-bold">Total Payroll Cost</h3>
             <div className="font-display-lg text-3xl xl:text-4xl text-black font-black font-mono">
-              {formatCurrency(stats?.totalPayroll)}
+              {displayCurrency(stats?.totalPayroll)}
             </div>
           </div>
         </div>
@@ -257,10 +270,11 @@ export default function AccountantDashboard() {
               <BarChart data={revenueChart}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#000000" vertical={false} opacity={0.2} />
                 <XAxis dataKey="name" stroke="#000000" tick={{ fill: '#000000', fontWeight: 'bold' }} />
-                <YAxis stroke="#000000" tick={{ fill: '#000000', fontWeight: 'bold' }} tickFormatter={(value) => `$${value}`} />
+                <YAxis stroke="#000000" tick={{ fill: '#000000', fontWeight: 'bold' }} tickFormatter={(value) => displayCurrency(value)} />
                 <Tooltip 
                   cursor={{ fill: 'rgba(0,0,0,0.05)' }}
                   contentStyle={{ backgroundColor: '#ffffff', border: '3px solid #000000', borderRadius: 0, boxShadow: '4px 4px 0 0 #FACC15', fontWeight: 'bold' }}
+                  formatter={(value: number) => [displayCurrency(value), "Revenue"]}
                 />
                 <Bar dataKey="revenue" fill="#000000" stroke="#000000" strokeWidth={2} radius={[4, 4, 0, 0]} />
               </BarChart>

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, Building2, Save, ShieldAlert, CheckCircle2,
   Mail, Phone, Briefcase, Calendar, MapPin, Users,
-  Globe, BriefcaseBusiness, Tag, Plus, Trash2, Shield
+  Globe, BriefcaseBusiness, Tag, Plus, Trash2, Shield,DollarSign
 } from "lucide-react";
 
 export default function SettingsPage() {
@@ -22,7 +22,8 @@ export default function SettingsPage() {
     email: "", // Readonly
     phoneNumber: "",
     age: "",
-    occupation: ""
+    occupation: "",
+    preferredCurrency: "USD"
   });
 
   // Company State
@@ -60,7 +61,8 @@ export default function SettingsPage() {
             email: profileData.user.email || "",
             phoneNumber: profileData.user.phoneNumber || "",
             age: profileData.user.age?.toString() || "",
-            occupation: profileData.user.occupation || ""
+            occupation: profileData.user.occupation || "",
+            preferredCurrency: profileData.user.preferredCurrency || "USD"
           });
         }
       }
@@ -107,7 +109,8 @@ export default function SettingsPage() {
           name: profileForm.name,
           phoneNumber: profileForm.phoneNumber,
           age: parseInt(profileForm.age) || undefined,
-          occupation: profileForm.occupation
+          occupation: profileForm.occupation,
+          preferredCurrency: profileForm.preferredCurrency
         })
       });
 
@@ -314,6 +317,24 @@ export default function SettingsPage() {
                           onChange={(e) => setProfileForm({ ...profileForm, occupation: e.target.value })}
                           className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15] font-bold"
                         />
+                      </div>
+                      <div className="flex flex-col gap-2 md:col-span-2">
+                        <label className="font-label-caps uppercase text-xs font-bold text-black/60 flex items-center gap-2">
+                          <DollarSign size={14} /> Dashboard Currency
+                        </label>
+                        <select
+                          value={profileForm.preferredCurrency}
+                          onChange={(e) => setProfileForm({ ...profileForm, preferredCurrency: e.target.value })}
+                          className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15] font-bold"
+                        >
+                          <option value="USD">USD - US Dollar</option>
+                          <option value="EUR">EUR - Euro</option>
+                          <option value="GBP">GBP - British Pound</option>
+                          <option value="PKR">PKR - Pakistani Rupee</option>
+                          <option value="INR">INR - Indian Rupee</option>
+                          <option value="AUD">AUD - Australian Dollar</option>
+                          <option value="CAD">CAD - Canadian Dollar</option>
+                        </select>
                       </div>
                     </div>
                     <div className="border-t-[3px] border-black pt-6 flex justify-end">

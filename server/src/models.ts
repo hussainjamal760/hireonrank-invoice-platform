@@ -9,6 +9,7 @@ export interface IUser extends Document {
   age?: number;
   occupation?: string;
   phoneNumber?: string;
+  preferredCurrency?: string;
   createdAt: Date;
 }
 
@@ -21,6 +22,7 @@ const UserSchema: Schema = new Schema({
   age: { type: Number },
   occupation: { type: String },
   phoneNumber: { type: String },
+  preferredCurrency: { type: String, default: 'USD' },
   createdAt: { type: Date, default: Date.now }
 });
 

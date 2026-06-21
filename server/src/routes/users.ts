@@ -26,7 +26,8 @@ router.get(
           email: user.email,
           age: user.age,
           occupation: user.occupation,
-          phoneNumber: user.phoneNumber
+          phoneNumber: user.phoneNumber,
+          preferredCurrency: user.preferredCurrency
         }
       });
     } catch (err) {
@@ -44,7 +45,7 @@ router.put(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const { name, age, occupation, phoneNumber } = req.body;
+      const { name, age, occupation, phoneNumber, preferredCurrency } = req.body;
 
       const updatedUser = await User.findByIdAndUpdate(
         req.user.userId,
@@ -53,7 +54,8 @@ router.put(
             ...(name && { name }),
             ...(age && { age }),
             ...(occupation && { occupation }),
-            ...(phoneNumber && { phoneNumber })
+            ...(phoneNumber && { phoneNumber }),
+            ...(preferredCurrency && { preferredCurrency })
           }
         },
         { new: true }
@@ -71,7 +73,8 @@ router.put(
           email: updatedUser.email,
           age: updatedUser.age,
           occupation: updatedUser.occupation,
-          phoneNumber: updatedUser.phoneNumber
+          phoneNumber: updatedUser.phoneNumber,
+          preferredCurrency: updatedUser.preferredCurrency
         }
       });
     } catch (err) {

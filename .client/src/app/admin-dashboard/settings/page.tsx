@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Settings as SettingsIcon, Shield, Mail, CreditCard, 
-  Database, Server, Save, AlertTriangle 
+  Database, Server, Save, AlertTriangle, User, DollarSign
 } from "lucide-react";
 
 const InputField = ({ label, type = "text", placeholder, defaultValue, hint }: any) => (
@@ -42,9 +42,54 @@ const ToggleSwitch = ({ label, description, defaultChecked }: any) => {
 
 export default function SuperAdminSettings() {
   const [activeTab, setActiveTab] = useState("general");
+  const [preferredCurrency, setPreferredCurrency] = useState("USD");
+  const [loading, setLoading] = useState(false);
+
+  import("react").then(({ useEffect }) => {
+    useEffect(() => {
+      const fetchProfile = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        try {
+          const res = await fetch("/api/users/profile", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.user?.preferredCurrency) {
+              setPreferredCurrency(data.user.preferredCurrency);
+            }
+          }
+        } catch (e) {}
+      };
+      fetchProfile();
+    }, []);
+  });
+
+  const savePreferences = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    setLoading(true);
+    try {
+      await fetch("/api/users/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ preferredCurrency })
+      });
+      alert("Preferences saved successfully!");
+    } catch (e) {
+      alert("Failed to save preferences.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const TABS = [
     { id: "general", label: "General", icon: SettingsIcon },
+    { id: "preferences", label: "Preferences", icon: User },
     { id: "security", label: "Security", icon: Shield },
     { id: "billing", label: "Billing & APIs", icon: CreditCard },
     { id: "mail", label: "SMTP / Mail", icon: Mail },
@@ -68,9 +113,9 @@ export default function SuperAdminSettings() {
             Platform Settings
           </h1>
         </div>
-        <button className="bg-emerald-400 text-black border-[3px] border-black px-8 py-3 font-label-caps text-sm tracking-widest uppercase font-black hover:bg-emerald-300 transition-colors shadow-[4px_4px_0_0_#000000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none flex items-center gap-2">
+        <button onClick={activeTab === "preferences" ? savePreferences : undefined} disabled={loading} className="bg-emerald-400 text-black border-[3px] border-black px-8 py-3 font-label-caps text-sm tracking-widest uppercase font-black hover:bg-emerald-300 transition-colors shadow-[4px_4px_0_0_#000000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none flex items-center gap-2">
           <Save size={18} strokeWidth={3} />
-          Save Changes
+          {loading ? "Saving..." : "Save Changes"}
         </button>
       </motion.div>
 
@@ -137,6 +182,35 @@ export default function SuperAdminSettings() {
                       description="Put the platform in maintenance mode. Only super admins can log in."
                       defaultChecked={false}
                     />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === "preferences" && (
+              <>
+                <div>
+                  <h2 className="font-display-md text-2xl uppercase font-black tracking-tight border-b-[3px] border-black pb-4 mb-6">
+                    Personal Preferences
+                  </h2>
+                  <div className="flex flex-col gap-4 max-w-md">
+                    <label className="font-label-caps uppercase text-xs font-bold text-black/60 flex items-center gap-2">
+                      <DollarSign size={14} /> Dashboard Currency
+                    </label>
+                    <select
+                      value={preferredCurrency}
+                      onChange={(e) => setPreferredCurrency(e.target.value)}
+                      className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15] font-bold"
+                    >
+                      <option value="USD">USD - US Dollar</option>
+                      <option value="EUR">EUR - Euro</option>
+                      <option value="GBP">GBP - British Pound</option>
+                      <option value="PKR">PKR - Pakistani Rupee</option>
+                      <option value="INR">INR - Indian Rupee</option>
+                      <option value="AUD">AUD - Australian Dollar</option>
+                      <option value="CAD">CAD - Canadian Dollar</option>
+                    </select>
+                    <p className="text-black/60 text-xs font-bold mt-1">This currency will be used to display dashboard and analytics metrics.</p>
                   </div>
                 </div>
               </>
