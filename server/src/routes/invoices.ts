@@ -538,6 +538,8 @@ router.post(
         console.log('Using mock JSON transport for email.');
       }
 
+      const invoiceUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/public/invoice/${invoice.publicLinkToken}`;
+      
       const mailOptions = {
         from: `"${company.name}" <${process.env.EMAIL_USER || process.env.SMTP_USER || 'no-reply@radicalledger.com'}>`,
         to: invoice.clientEmail,
@@ -545,7 +547,11 @@ router.post(
         text: `Dear ${invoice.clientName},\n\nPlease find attached your invoice ${invoice.invoiceNumber} for the amount of $${invoice.totalAmount.toLocaleString()}.\n\nThank you for your business!\n\n${company.name}`,
         html: `<p>Dear <strong>${invoice.clientName}</strong>,</p>
                <p>Please find attached your invoice <strong>${invoice.invoiceNumber}</strong> for the amount of <strong>$${invoice.totalAmount.toLocaleString()}</strong>.</p>
-               <p>You can also view your invoice online <a href="${process.env.CLIENT_URL || 'http://localhost:3000'}/public/invoice/${invoice.publicLinkToken}">here</a>.</p>
+               <p>You can also view your invoice online <a href="${invoiceUrl}">here</a>.</p>
+               <div style="margin: 20px 0;">
+                 <p>Scan this QR code to view your invoice:</p>
+                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(invoiceUrl)}" alt="Invoice QR Code" style="border: 1px solid #ccc; padding: 5px; border-radius: 5px;" />
+               </div>
                <p>Thank you for your business!</p>
                <p><strong>${company.name}</strong></p>`,
         attachments: [

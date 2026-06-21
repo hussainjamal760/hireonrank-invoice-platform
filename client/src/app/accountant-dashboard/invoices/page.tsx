@@ -8,7 +8,7 @@ import {
   FileText, Calendar, ShieldAlert, CheckCircle2,
   ListFilter, Play, ArrowUpRight, DollarSign, Check,
   Plus, Download, Search, MoreVertical, Eye, Send,
-  Clock, X, Copy, Mail
+  Clock, X, Copy, Mail, QrCode
 } from "lucide-react";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { exportTableToCSV, exportTableToPDF } from "@/utils/tableExport";
@@ -533,18 +533,44 @@ export default function InvoicesTab() {
                   </button>
 
                   {showDeliveryModal.publicLinkToken && (
-                    <button
-                      onClick={() => {
-                        const url = `${window.location.origin}/public/invoice/${showDeliveryModal.publicLinkToken}`;
-                        navigator.clipboard.writeText(url);
-                        setSuccess("Public link copied to clipboard!");
-                        setShowDeliveryModal(null);
-                        setTimeout(() => setSuccess(""), 3000);
-                      }}
-                      className="w-full bg-white text-black hover:bg-gray-100 border-[3px] border-black p-4 font-black uppercase text-sm shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2"
-                    >
-                      <Copy size={18} /> Copy Public Link
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          const url = `${window.location.origin}/public/invoice/${showDeliveryModal.publicLinkToken}`;
+                          navigator.clipboard.writeText(url);
+                          setSuccess("Public link copied to clipboard!");
+                          setShowDeliveryModal(null);
+                          setTimeout(() => setSuccess(""), 3000);
+                        }}
+                        className="w-full bg-white text-black hover:bg-gray-100 border-[3px] border-black p-4 font-black uppercase text-sm shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2"
+                      >
+                        <Copy size={18} /> Copy Public Link
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const url = `${window.location.origin}/public/invoice/${showDeliveryModal.publicLinkToken}`;
+                          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(url)}`;
+                          try {
+                            const res = await fetch(qrUrl);
+                            const blob = await res.blob();
+                            const objectUrl = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = objectUrl;
+                            a.download = `QR-${showDeliveryModal.invoiceNumber}.png`;
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                            URL.revokeObjectURL(objectUrl);
+                            setSuccess("QR code downloaded successfully!");
+                          } catch (err) {
+                            setError("Failed to download QR code");
+                          }
+                        }}
+                        className="w-full bg-white text-black hover:bg-gray-100 border-[3px] border-black p-4 font-black uppercase text-sm shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2"
+                      >
+                        <QrCode size={18} /> Download QR
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
