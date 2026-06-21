@@ -29,6 +29,7 @@ interface Invoice {
   publicLinkToken?: string;
   items?: any[];
   employeeId?: any;
+  clientEmail?: string;
 }
 
 export default function InvoicesTab() {
@@ -46,6 +47,18 @@ export default function InvoicesTab() {
   // Panels
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showDeliveryModal, setShowDeliveryModal] = useState<Invoice | null>(null);
+  const [deliveryEmail, setDeliveryEmail] = useState("");
+  const [modalError, setModalError] = useState("");
+
+  useEffect(() => {
+    if (showDeliveryModal) {
+      setDeliveryEmail(showDeliveryModal.clientEmail || "");
+      setModalError("");
+    } else {
+      setDeliveryEmail("");
+      setModalError("");
+    }
+  }, [showDeliveryModal]);
 
   // Bulk Run
   const [runMonth, setRunMonth] = useState("");
@@ -502,20 +515,48 @@ export default function InvoicesTab() {
               </h2>
 
               <div className="flex flex-col gap-6">
+                {modalError && (
+                  <div className="bg-[#FFE5E5] text-[#D32F2F] border-[3px] border-[#D32F2F] p-3.5 font-bold flex items-start gap-2.5 shadow-[3px_3px_0_0_#D32F2F] text-xs leading-normal break-words overflow-hidden rounded">
+                    <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+                    <span className="w-full break-words">{modalError}</span>
+                  </div>
+                )}
+
                 <div className="bg-[#fbfbfa] border-[3px] border-black p-4">
                   <div className="font-label-caps text-xs uppercase font-bold text-black/60 mb-1">Invoice</div>
                   <div className="font-mono font-black text-lg">{showDeliveryModal.invoiceNumber}</div>
                   <div className="font-bold">{showDeliveryModal.displayClient}</div>
                 </div>
 
+                <div className="flex flex-col gap-2">
+                  <label className="font-label-caps text-[11px] uppercase font-black text-black">Recipient Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="email@example.com"
+                    value={deliveryEmail}
+                    onChange={(e) => setDeliveryEmail(e.target.value)}
+                    className="w-full p-3 bg-white border-[3px] border-black font-mono font-bold text-xs focus:outline-none focus:bg-[#FACC15] transition-all"
+                  />
+                </div>
+
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={async () => {
+                      if (!deliveryEmail.trim()) {
+                        setModalError("Client email is required to send the invoice");
+                        return;
+                      }
+                      setModalError("");
                       try {
                         const token = localStorage.getItem('token');
                         const res = await fetch(`/api/invoices/${showDeliveryModal._id}/send`, {
                           method: 'POST',
-                          headers: { Authorization: `Bearer ${token}` }
+                          headers: { 
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}` 
+                          },
+                          body: JSON.stringify({ email: deliveryEmail.trim() })
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.message || 'Failed to send email');
@@ -524,7 +565,7 @@ export default function InvoicesTab() {
                         setTimeout(() => setSuccess(""), 3000);
                         fetchInvoices();
                       } catch (err: any) {
-                        setError(err.message || 'Error sending email');
+                        setModalError(err.message || 'Error sending email');
                       }
                     }}
                     className="w-full bg-[#FACC15] text-black hover:bg-black hover:text-[#FACC15] border-[3px] border-black p-4 font-black uppercase text-sm shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2"

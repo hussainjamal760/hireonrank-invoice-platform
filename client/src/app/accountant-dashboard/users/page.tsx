@@ -309,7 +309,7 @@ export default function UsersPage() {
   };
 
   const handleCopyLink = (inviteToken: string) => {
-    const inviteLink = `${window.location.origin}/create-company?invite_token=${inviteToken}`;
+    const inviteLink = `${window.location.origin}/login?invite_token=${inviteToken}`;
     navigator.clipboard.writeText(inviteLink);
     setSuccess("Invitation link copied to clipboard!");
     setTimeout(() => setSuccess(""), 3000);
