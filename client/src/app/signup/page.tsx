@@ -19,7 +19,6 @@ export default function Signup() {
   const [otpSending, setOtpSending] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-  const [devOtp, setDevOtp] = useState("");
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -135,7 +134,6 @@ export default function Signup() {
     setOtpSending(true);
     setError("");
     setSuccessMsg("");
-    setDevOtp("");
 
     try {
       const res = await fetch(`/api/auth/send-otp`, {
@@ -146,9 +144,6 @@ export default function Signup() {
 
       const data = await handleApiResponse(res);
       setSuccessMsg("Verification code sent to your email!");
-      if (data.otp) {
-        setDevOtp(data.otp);
-      }
     } catch (err: any) {
       setError(err.message || "Something went wrong sending verification code.");
     } finally {
@@ -221,13 +216,6 @@ export default function Signup() {
             <div className="bg-[#E5F6E5] text-[#008A00] border-[3px] border-[#008A00] p-4 font-bold flex items-center gap-3">
               <CheckCircle2 size={20} className="flex-shrink-0" />
               <span>{successMsg}</span>
-            </div>
-          )}
-
-          {devOtp && (
-            <div className="bg-primary-container border-[3px] border-on-background p-4 neo-brutal-shadow">
-              <p className="font-bold text-sm uppercase">🔧 Development Mode Sandbox OTP</p>
-              <p className="font-display-lg text-3xl font-black mt-2 tracking-widest text-center">{devOtp}</p>
             </div>
           )}
 
