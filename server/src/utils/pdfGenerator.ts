@@ -1,6 +1,18 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+const getCurrencySymbol = (currencyCode: string) => {
+  switch(currencyCode?.toUpperCase()) {
+    case 'EUR': return '€';
+    case 'GBP': return '£';
+    case 'INR': return '₹';
+    case 'PKR': return 'Rs ';
+    case 'AUD': return 'A$';
+    case 'CAD': return 'C$';
+    case 'USD': default: return '$';
+  }
+};
+
 const drawVoicyLogo = (doc: jsPDF, x: number, y: number, isDarkBackground = false) => {
   // A sleek black box with a yellow "V" triangle/lightning shape
   doc.setFillColor(isDarkBackground ? 255 : 15, isDarkBackground ? 255 : 23, isDarkBackground ? 255 : 42);
@@ -61,7 +73,7 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
   if (company?.contactNumber) { doc.text(`Phone: ${company.contactNumber}`, 15, addrY); addrY += 5; }
   if (company?.website) { doc.text(`Web: ${company.website}`, 15, addrY); addrY += 5; }
 
-  // Employee Info (Right Side)
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
@@ -81,14 +93,15 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
   // Earnings & Deductions Tables (Side by Side illusion using autoTable)
   currentY += 30;
   
-  // We use autoTable to structure Earnings and Deductions neatly
+  const sym = getCurrencySymbol(record.currency || 'USD');
+
   autoTable(doc, {
     startY: currentY,
     head: [['Description', 'Earnings', 'Deductions']],
     body: [
-      ['Base Salary', `Rs ${record.baseSalary?.toLocaleString()}`, ''],
-      ['Bonuses & Allowances', `Rs ${record.bonuses?.toLocaleString()}`, ''],
-      ['Adjustments / Taxes', '', `Rs ${record.deductions?.toLocaleString()}`],
+      ['Base Salary', `${sym}${record.baseSalary?.toLocaleString()}`, ''],
+      ['Bonuses & Allowances', `${sym}${record.bonuses?.toLocaleString()}`, ''],
+      ['Adjustments / Taxes', '', `${sym}${record.deductions?.toLocaleString()}`],
     ],
     theme: 'grid',
     headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
@@ -122,7 +135,7 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text(`Rs ${record.netPay?.toLocaleString()}`, 122, finalY + 22);
+  doc.text(`${sym}${record.netPay?.toLocaleString()}`, 122, finalY + 22);
 
   // Footer / Watermark
   doc.setDrawColor(226, 232, 240);

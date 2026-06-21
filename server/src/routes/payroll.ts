@@ -76,7 +76,8 @@ router.get(
         baseSalary: record.baseSalary,
         bonuses: record.totalAllowances,
         deductions: record.totalTax,
-        netPay: record.netSalary
+        netPay: record.netSalary,
+        currency: record.currency
       } : {
         period: record.period,
         employeeName: record.employeeName,
@@ -84,7 +85,8 @@ router.get(
         baseSalary: record.baseSalary,
         bonuses: record.bonuses,
         deductions: record.deductions,
-        netPay: record.netPay
+        netPay: record.netPay,
+        currency: record.currency
       };
 
       const pdfBuffer = await generateSalarySlipPDF(pdfData, company);
