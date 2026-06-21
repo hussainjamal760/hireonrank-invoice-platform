@@ -221,8 +221,18 @@ router.get(
         };
       });
 
+      const normalizeMonth = (m: string) => {
+        const parts = m.trim().split(/\s+/);
+        if (parts.length === 2) {
+          const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+          const idx = months.indexOf(parts[0].toLowerCase());
+          if (idx !== -1) return `${parts[1]}-${String(idx + 1).padStart(2, '0')}`;
+        }
+        return m;
+      };
+
       const filteredOldRecords = mappedOldRecords.filter((oldR: any) => 
-        !mappedNewRecords.some((newR: any) => newR.employeeId.toString() === oldR.employeeId.toString() && newR.month === oldR.month)
+        !mappedNewRecords.some((newR: any) => newR.employeeId.toString() === oldR.employeeId.toString() && newR.month === normalizeMonth(oldR.month))
       );
 
       const allPayrolls = [...mappedNewRecords, ...filteredOldRecords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
