@@ -23,21 +23,42 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-app.use('/api', routes);
-
-app.use(errorHandler);
-
-const startServer = async () => {
+let isConnected = false;
+const connectDB = async () => {
+  if (isConnected) return;
   try {
     const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/hor-invoice';
-    await mongoose.connect(mongoUri);
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
+    const db = await mongoose.connect(mongoUri);
+    isConnected = db.connections[0].readyState === 1;
+    console.log("MongoDB Connected");
   } catch (error) {
-    console.error(error);
-    process.exit(1);
+    console.error("MongoDB Connection Error:", error);
   }
 };
 
-startServer();
+// Vercel Serverless: Ensure DB is connected before handling requests
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
+
+app.use('/api', routes);
+app.use(errorHandler);
+
+// If not running in Vercel, start the server normally
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  const startServer = async () => {
+    try {
+      await connectDB();
+      app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+      });
+    } catch (error) {
+      console.error(error);
+      process.exit(1);
+    }
+  };
+  startServer();
+}
+
+export default app;
