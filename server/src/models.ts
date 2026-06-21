@@ -303,6 +303,7 @@ export interface IPayrollRecord extends Document {
   deductions: number;
   bonuses: number;
   netPay: number;
+  currency: string;
   status: PayrollStatus;
   paidAt?: Date;
   generatedBy: mongoose.Types.ObjectId;
@@ -319,6 +320,7 @@ const PayrollRecordSchema: Schema = new Schema({
   deductions: { type: Number, default: 0, min: 0 },
   bonuses: { type: Number, default: 0, min: 0 },
   netPay: { type: Number, required: true, min: 0 },
+  currency: { type: String, default: 'USD', required: true },
   status: { type: String, enum: ['PENDING', 'PROCESSED', 'PAID'], default: 'PENDING', required: true },
   paidAt: { type: Date },
   generatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -428,6 +430,7 @@ export interface IPayroll extends Document {
   totalAllowances: number;
   totalTax: number;
   netSalary: number;
+  currency: string;
   generatedBy: mongoose.Types.ObjectId;
   createdAt: Date;
 }
@@ -440,6 +443,7 @@ const PayrollSchema: Schema = new Schema({
   totalAllowances: { type: Number, required: true, default: 0 },
   totalTax: { type: Number, required: true, default: 0 },
   netSalary: { type: Number, required: true, default: 0 },
+  currency: { type: String, default: 'USD', required: true },
   generatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now }
 });
@@ -454,6 +458,7 @@ export interface IPayrollInvoice extends Document {
   invoiceNumber: string;
   month: string;
   amount: number;
+  currency: string;
   status: 'generated' | 'paid' | 'pending';
   createdAt: Date;
 }
@@ -464,6 +469,7 @@ const PayrollInvoiceSchema: Schema = new Schema({
   invoiceNumber: { type: String, required: true },
   month: { type: String, required: true },
   amount: { type: Number, required: true, default: 0 },
+  currency: { type: String, default: 'USD', required: true },
   status: { type: String, enum: ['generated', 'paid', 'pending'], default: 'generated', required: true },
   createdAt: { type: Date, default: Date.now }
 });

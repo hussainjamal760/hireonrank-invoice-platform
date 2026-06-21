@@ -306,7 +306,7 @@ export default function PayrollTab() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(generatedPayroll)
+        body: JSON.stringify({ ...generatedPayroll, currency: currency.code })
       });
 
       const data = await res.json();
@@ -783,10 +783,29 @@ export default function PayrollTab() {
                 </select>
               </div>
 
+              {/* Currency Selector */}
+              <div className="flex flex-col gap-2">
+                <label className="font-label-caps uppercase text-xs font-bold flex items-center gap-1.5">
+                  <Banknote size={14} /> 3. Select Currency
+                </label>
+                <select
+                  value={currency.code}
+                  onChange={(e) => {
+                    const selected = CURRENCIES.find(c => c.code === e.target.value);
+                    if (selected) setCurrency(selected);
+                  }}
+                  className="w-full bg-white border-[3px] border-black p-3 font-mono font-bold focus:outline-none focus:bg-[#FACC15] cursor-pointer"
+                >
+                  {CURRENCIES.map(c => (
+                    <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Text Area */}
               <div className="flex flex-col gap-2">
                 <label className="font-label-caps uppercase text-xs font-bold">
-                  3. Enter Natural Language Payroll request
+                  4. Enter Natural Language Payroll request
                 </label>
                 <textarea
                   rows={5}

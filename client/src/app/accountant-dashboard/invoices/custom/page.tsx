@@ -314,15 +314,17 @@ export default function InvoiceDesignerPage() {
           logo: data.company.logo || '',
           name: data.company.name || '',
           address: data.company.address || '',
-          phone: data.company.phone || '',
+          phone: data.company.contactNumber || data.company.phone || '',
           website: data.company.website || ''
         });
         
         setBranding(prev => ({
           ...prev,
           logoUrl: data.company.logo || prev.logoUrl || '',
-          companyName: prev.companyName === 'Radical Ledger Inc.' ? data.company.name : prev.companyName,
-          companyAddress: prev.companyAddress === '123 Finance District, Suite 400\nNew York, NY 10005' && data.company.address ? data.company.address : prev.companyAddress
+          companyName: prev.companyName === 'Radical Ledger Inc.' && data.company.name ? data.company.name : prev.companyName,
+          companyAddress: prev.companyAddress === '123 Finance District, Suite 400\nNew York, NY 10005' && data.company.address ? data.company.address : prev.companyAddress,
+          website: prev.website === 'www.radicalledger.com' && data.company.website ? data.company.website : prev.website,
+          phone: prev.phone === '+1 (555) 987-6543' && (data.company.contactNumber || data.company.phone) ? (data.company.contactNumber || data.company.phone) : prev.phone
         }));
       }
     } catch {}

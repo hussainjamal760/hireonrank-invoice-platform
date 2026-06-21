@@ -155,7 +155,8 @@ router.post(
         otherDeductions,
         grossSalary,
         totalDeductions,
-        netSalary
+        netSalary,
+        currency
       } = req.body;
 
       if (!employeeId) {
@@ -215,7 +216,8 @@ router.post(
         totalAllowances: allowancesSum + numericBonus,
         totalTax: calculatedDeductions,
         netSalary: calculatedNet,
-        generatedBy: new mongoose.Types.ObjectId(userId)
+        generatedBy: new mongoose.Types.ObjectId(userId),
+        currency: currency || 'USD'
       });
 
       // 5. Generate seq invoice number & save to PayrollInvoice model (New System)
@@ -226,7 +228,8 @@ router.post(
         invoiceNumber,
         month,
         amount: calculatedNet,
-        status: 'generated'
+        status: 'generated',
+        currency: currency || 'USD'
       });
 
       // 6. Save to PayrollRecord model (Old System for backward compatibility)
@@ -241,7 +244,8 @@ router.post(
         bonuses: allowancesSum + numericBonus,
         netPay: calculatedNet,
         status: 'PROCESSED',
-        generatedBy: new mongoose.Types.ObjectId(userId)
+        generatedBy: new mongoose.Types.ObjectId(userId),
+        currency: currency || 'USD'
       });
 
       // Send notification email to employee immediately
