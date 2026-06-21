@@ -61,7 +61,7 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
   if (company?.contactNumber) { doc.text(`Phone: ${company.contactNumber}`, 15, addrY); addrY += 5; }
   if (company?.website) { doc.text(`Web: ${company.website}`, 15, addrY); addrY += 5; }
 
-  // Employee Info (Right Side)
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
