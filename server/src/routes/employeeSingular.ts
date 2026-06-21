@@ -205,7 +205,8 @@ router.get(
       }));
 
       const mappedNewRecords = newPayrolls.map((p: any) => {
-        const inv = newInvoices.find((i: any) => i.employeeId.toString() === p.employeeId.toString() && i.month === p.month);
+        const empIdStr = p.employeeId?.toString() || '';
+        const inv = newInvoices.find((i: any) => i.employeeId?.toString() === empIdStr && i.month === p.month);
         return {
           _id: inv ? inv._id : p._id,
           companyId: p.companyId,
@@ -231,9 +232,13 @@ router.get(
         return m;
       };
 
-      const filteredOldRecords = mappedOldRecords.filter((oldR: any) => 
-        !mappedNewRecords.some((newR: any) => newR.employeeId.toString() === oldR.employeeId.toString() && newR.month === normalizeMonth(oldR.month))
-      );
+      const filteredOldRecords = mappedOldRecords.filter((oldR: any) => {
+        const oldEmpId = oldR.employeeId?.toString() || '';
+        return !mappedNewRecords.some((newR: any) => {
+          const newEmpId = newR.employeeId?.toString() || '';
+          return newEmpId === oldEmpId && newR.month === normalizeMonth(oldR.month);
+        });
+      });
 
       const allPayrolls = [...mappedNewRecords, ...filteredOldRecords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 

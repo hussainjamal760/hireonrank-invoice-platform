@@ -488,7 +488,8 @@ router.get(
         const newInvoices = await PayrollInvoice.find({ companyId: id }).lean();
         
         const mappedNewRecords = newPayrolls.map((p: any) => {
-          const inv = newInvoices.find((i: any) => i.employeeId.toString() === p.employeeId._id.toString() && i.month === p.month);
+          const empIdStr = (p.employeeId?._id || p.employeeId)?.toString() || '';
+          const inv = newInvoices.find((i: any) => i.employeeId.toString() === empIdStr && i.month === p.month);
           return {
             _id: inv ? inv._id : p._id, // Use invoice ID so download and status endpoints work seamlessly
             employeeId: p.employeeId,
@@ -513,9 +514,13 @@ router.get(
           return m;
         };
 
-        const filteredOldRecords = mappedOldRecords.filter((oldR: any) => 
-          !mappedNewRecords.some((newR: any) => newR.employeeId._id.toString() === oldR.employeeId._id.toString() && newR.month === normalizeMonth(oldR.month))
-        );
+        const filteredOldRecords = mappedOldRecords.filter((oldR: any) => {
+          const oldEmpId = (oldR.employeeId?._id || oldR.employeeId)?.toString() || '';
+          return !mappedNewRecords.some((newR: any) => {
+            const newEmpId = (newR.employeeId?._id || newR.employeeId)?.toString() || '';
+            return newEmpId === oldEmpId && newR.month === normalizeMonth(oldR.month);
+          });
+        });
 
         const records = [...mappedNewRecords, ...filteredOldRecords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
