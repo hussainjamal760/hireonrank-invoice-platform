@@ -1,6 +1,6 @@
 import { Router, Response, NextFunction } from 'express';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
-import { Employee, EmployeeProfile, ActivityLog } from '../models';
+import { Employee, EmployeeProfile, ActivityLog, Company, PayrollRecord, PayrollInvoice, Payroll } from '../models';
 
 const router = Router();
 
@@ -153,6 +153,83 @@ router.get(
       }
 
       return res.status(200).json({ success: true, employee, profile });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * GET /employee/me-global
+ * Retrieves ALL employee records, profiles, and their payrolls for the logged-in user across all companies.
+ */
+router.get(
+  '/me-global',
+  authenticateToken,
+  async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+    try {
+      const email = req.user!.email.toLowerCase();
+
+      // Fetch all employee records matching this user's email
+      const employees = await Employee.find({ email }).lean();
+      if (!employees || employees.length === 0) {
+        return res.status(404).json({ message: 'No employee records found for this user' });
+      }
+
+      const employeeIds = employees.map(e => e._id);
+      const companyIds = employees.map(e => e.companyId);
+
+      // Fetch all corresponding profiles
+      const profiles = await EmployeeProfile.find({ employeeId: { $in: employeeIds } }).lean();
+
+      // Fetch all corresponding companies
+      const companies = await Company.find({ _id: { $in: companyIds } }).select('name logo role').lean();
+
+      // Fetch all corresponding payrolls
+      const oldRecords = await PayrollRecord.find({ employeeId: { $in: employeeIds } }).lean();
+      const newPayrolls = await Payroll.find({ employeeId: { $in: employeeIds } }).lean();
+      const newInvoices = await PayrollInvoice.find({ employeeId: { $in: employeeIds } }).lean();
+
+      const mappedOldRecords = oldRecords.map((r: any) => ({
+        _id: r._id,
+        companyId: r.companyId,
+        employeeId: r.employeeId,
+        month: r.period,
+        baseSalary: r.baseSalary,
+        totalAllowances: r.bonuses || 0,
+        totalTax: r.deductions || 0,
+        netSalary: r.netPay,
+        status: r.status,
+        currency: r.currency || 'USD',
+        createdAt: r.createdAt
+      }));
+
+      const mappedNewRecords = newPayrolls.map((p: any) => {
+        const inv = newInvoices.find((i: any) => i.employeeId.toString() === p.employeeId.toString() && i.month === p.month);
+        return {
+          _id: inv ? inv._id : p._id,
+          companyId: p.companyId,
+          employeeId: p.employeeId,
+          month: p.month,
+          baseSalary: p.baseSalary,
+          totalAllowances: p.totalAllowances,
+          totalTax: p.totalTax,
+          netSalary: p.netSalary,
+          status: inv ? (inv.status === 'generated' ? 'PROCESSED' : inv.status.toUpperCase()) : 'PROCESSED',
+          currency: p.currency || 'USD',
+          createdAt: p.createdAt
+        };
+      });
+
+      const allPayrolls = [...mappedNewRecords, ...mappedOldRecords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      return res.status(200).json({
+        success: true,
+        employees,
+        profiles,
+        companies,
+        payrolls: allPayrolls
+      });
     } catch (err) {
       next(err);
     }

@@ -77,6 +77,16 @@ const EXAMPLE_PROMPTS = [
   }
 ];
 
+const CURRENCIES = [
+  { code: 'USD', symbol: '$' },
+  { code: 'EUR', symbol: '€' },
+  { code: 'GBP', symbol: '£' },
+  { code: 'INR', symbol: '₹' },
+  { code: 'PKR', symbol: 'Rs ' },
+  { code: 'AUD', symbol: 'A$' },
+  { code: 'CAD', symbol: 'C$' }
+];
+
 export default function PayrollTab() {
   const [activeTab, setActiveTab] = useState<"ledger" | "ai-generator">("ledger");
 
@@ -97,6 +107,7 @@ export default function PayrollTab() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [promptText, setPromptText] = useState("");
+  const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [aiLoading, setAiLoading] = useState(false);
 
   // Preview Modal States

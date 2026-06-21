@@ -5,6 +5,7 @@ import { FileSpreadsheet, Download, ShieldAlert, Award, Scissors } from "lucide-
 
 interface PayrollRecord {
   _id: string;
+  companyId: string;
   month: string;
   baseSalary: number;
   totalAllowances: number;
@@ -17,6 +18,7 @@ interface PayrollRecord {
 
 export default function SalarySlips() {
   const [records, setRecords] = useState<PayrollRecord[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filterMonth, setFilterMonth] = useState("ALL");
@@ -49,21 +51,26 @@ export default function SalarySlips() {
     setLoading(true);
     setError("");
     const token = localStorage.getItem("token");
-    const companyId = decodeCompanyId();
-    if (!token || !companyId) return;
+    if (!token) return;
 
     try {
-      const res = await fetch(`/api/payroll/${companyId}`, {
+      const res = await fetch(`/api/employee/me-global`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to fetch salary slips");
-      setRecords(data.records || []);
+      setRecords(data.payrolls || []);
+      setCompanies(data.companies || []);
     } catch (err: any) {
       setError(err.message || "Failed to load salary slips.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const getCompanyName = (cId: string) => {
+    const c = companies.find(comp => comp._id === cId);
+    return c ? c.name : "Unknown Company";
   };
 
   useEffect(() => {
@@ -148,6 +155,7 @@ export default function SalarySlips() {
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="bg-[#FACC15] border-b-[3px] border-black font-label-caps text-xs uppercase font-black text-black">
+                  <th className="p-4 border-r-[2px] border-black">Company</th>
                   <th className="p-4 border-r-[2px] border-black">Month</th>
                   <th className="p-4 border-r-[2px] border-black">Base Salary</th>
                   <th className="p-4 border-r-[2px] border-black">Allowances</th>
@@ -160,6 +168,7 @@ export default function SalarySlips() {
               <tbody className="divide-y-[2px] divide-black font-mono text-sm">
                 {filteredRecords.map((rec) => (
                   <tr key={rec._id} className="hover:bg-[#FACC15]/10 text-black transition-colors">
+                    <td className="p-4 border-r-[2px] border-black font-bold text-xs">{getCompanyName(rec.companyId)}</td>
                     <td className="p-4 border-r-[2px] border-black font-bold text-xs">{rec.month}</td>
                     <td className="p-4 border-r-[2px] border-black">{getCurrencySymbol(rec.currency || 'USD')}{rec.baseSalary?.toLocaleString()}</td>
                     <td className="p-4 border-r-[2px] border-black text-emerald-600 font-bold flex items-center gap-1">

@@ -7,8 +7,8 @@ import Link from "next/link";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 
 export default function EmployeeDashboard() {
-  const [profile, setProfile] = useState<any>(null);
-  const [employee, setEmployee] = useState<any>(null);
+  const [globalData, setGlobalData] = useState<any>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("ALL");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -30,14 +30,13 @@ export default function EmployeeDashboard() {
       if (!token) return;
 
       try {
-        const res = await fetch("/api/employee/me", {
+        const res = await fetch("/api/employee/me-global", {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Failed to load profile");
+        if (!res.ok) throw new Error(data.message || "Failed to load profiles");
         
-        setEmployee(data.employee);
-        setProfile(data.profile);
+        setGlobalData(data);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -60,19 +59,44 @@ export default function EmployeeDashboard() {
     );
   }
 
-  const currencySymbol = getCurrencySymbol(profile?.currency);
-  const totalAllowances = (profile?.allowances || []).reduce((sum: number, a: any) => sum + a.amount, 0) + (profile?.bonusThisMonth || 0);
-  const baseSalary = profile?.baseSalary || 0;
-  const totalTaxes = (profile?.taxRules || []).reduce((sum: number, t: any) => sum + (baseSalary * (t.rate / 100)), 0) + (profile?.deductionThisMonth || 0);
+  let filteredProfiles = globalData?.profiles || [];
+  if (selectedCompanyId !== "ALL") {
+    filteredProfiles = filteredProfiles.filter((p: any) => p.companyId === selectedCompanyId);
+  }
+
+  const primaryCurrency = filteredProfiles[0]?.currency || 'USD';
+  const currencySymbol = getCurrencySymbol(primaryCurrency);
+
+  let baseSalary = 0;
+  let totalAllowances = 0;
+  let totalTaxes = 0;
+
+  filteredProfiles.forEach((profile: any) => {
+    baseSalary += profile.baseSalary || 0;
+    totalAllowances += (profile.allowances || []).reduce((sum: number, a: any) => sum + a.amount, 0) + (profile.bonusThisMonth || 0);
+    totalTaxes += (profile.taxRules || []).reduce((sum: number, t: any) => sum + ((profile.baseSalary || 0) * (t.rate / 100)), 0) + (profile.deductionThisMonth || 0);
+  });
+
   const netSalary = Math.max(0, baseSalary + totalAllowances - totalTaxes);
+  const employeeName = globalData?.employees?.[0]?.name || "Employee";
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-12">
       <div className="flex flex-col md:flex-row items-start md:items-end justify-between border-b-[4px] border-black pb-6 gap-4">
         <div>
           <h1 className="font-headline-lg text-5xl md:text-6xl uppercase font-black tracking-tighter">My Dashboard</h1>
-          <p className="font-body-md text-black/60 font-bold uppercase mt-2">Welcome back, {employee?.name}!</p>
+          <p className="font-body-md text-black/60 font-bold uppercase mt-2">Welcome back, {employeeName}!</p>
         </div>
+        <select 
+          value={selectedCompanyId} 
+          onChange={e => setSelectedCompanyId(e.target.value)}
+          className="bg-white border-[3px] border-black p-3 font-mono font-bold focus:outline-none focus:bg-[#FACC15] cursor-pointer shadow-[4px_4px_0_0_#000000]"
+        >
+          <option value="ALL">All Companies</option>
+          {globalData?.companies?.map((c: any) => (
+            <option key={c._id} value={c._id}>{c.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
