@@ -52,22 +52,33 @@ export default function Signup() {
             if (data.email) {
               setEmail(data.email);
             }
+
+            // Check if already logged in with the correct email
+            const localToken = localStorage.getItem('token');
+            if (localToken) {
+              try {
+                const payload = JSON.parse(atob(localToken.split('.')[1]));
+                if (payload.email === data.email) {
+                  router.push(`/join?token=${token}`);
+                } else {
+                  // Clear incorrect/stale token to allow new signup
+                  localStorage.removeItem('token');
+                }
+              } catch {
+                localStorage.removeItem('token');
+              }
+            }
           }
         })
         .catch(err => console.error("Error fetching invite info:", err));
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('token')) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get("invite_token");
-      if (token) {
-        router.push(`/join?token=${token}`);
-        return;
-      }
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("invite_token");
+    if (!token && typeof window !== 'undefined' && localStorage.getItem('token')) {
       router.push('/accountant-dashboard');
-      return;
     }
   }, [router]);
 

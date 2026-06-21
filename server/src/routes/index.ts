@@ -15,6 +15,7 @@ import invoiceTemplatesRouter from './invoiceTemplates';
 import publicRouter from './public';
 import clientsRouter from './clients';
 import aiInvoiceRouter from './aiInvoice';
+import aiPayrollRouter from './aiPayroll';
 import adminRouter from './admin';
 
 const router = Router();
@@ -34,6 +35,7 @@ router.use('/invoice-templates', invoiceTemplatesRouter);
 router.use('/public', publicRouter);
 router.use('/clients', clientsRouter);
 router.use('/ai/invoice', aiInvoiceRouter);
+router.use('/ai/payroll', aiPayrollRouter);
 router.use('/admin', adminRouter);
 
 router.get('/health', (req, res) => {

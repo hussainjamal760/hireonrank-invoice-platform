@@ -526,7 +526,7 @@ router.patch(
   '/:id/status',
   authenticateToken,
   requireCompany,
-  requireRole(['OWNER', 'ADMIN']),
+  requireRole(['OWNER', 'ADMIN', 'ACCOUNTANT']),
   async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
     try {
       const companyId = req.user!.currentCompanyId as string;

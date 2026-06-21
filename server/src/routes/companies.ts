@@ -769,7 +769,7 @@ router.get(
   '/invitations',
   authenticateToken,
   requireCompany,
-  requireRole(['OWNER', 'ADMIN']),
+  requireRole(['OWNER', 'ADMIN', 'ACCOUNTANT']),
   async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
     try {
       if (!req.user || !req.user.currentCompanyId) {
@@ -799,7 +799,7 @@ router.delete(
   '/invitations/:id',
   authenticateToken,
   requireCompany,
-  requireRole(['OWNER', 'ADMIN']),
+  requireRole(['OWNER', 'ADMIN', 'ACCOUNTANT']),
   async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
     try {
       if (!req.user || !req.user.currentCompanyId) {
