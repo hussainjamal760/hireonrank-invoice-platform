@@ -6,6 +6,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { ArrowUpRight, CheckCircle2, Check, Star, Shield, Zap, FileText, Users, DollarSign, LayoutTemplate, Briefcase, FileSignature, PieChart, Menu, X, ArrowRight, ArrowDown } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { WelcomeLoader } from "@/components/WelcomeLoader";
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
     initial={{ opacity: 0, y: 40 }}
@@ -70,6 +71,7 @@ export default function Home() {
 
   return (
     <>
+      <WelcomeLoader />
       <Navbar />
 
       <main>
