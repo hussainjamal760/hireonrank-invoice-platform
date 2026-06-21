@@ -376,7 +376,7 @@ export default function AccountantDashboard() {
                 <span className="border-[2px] border-black bg-white w-6 h-6 flex items-center justify-center shrink-0 font-mono text-xs">3</span>
                 <span>Run bulk monthly payroll and auto-generate invoice ledgers.</span>
               </li>
-              <li className="flex items-start gap-2 pt-4 border-t-[2px] border-black/20 mt-4">
+              <li className="flex items-start gap-2 pt-4 border-t-[2px] border-black/20/20 mt-4">
                 <span className="border-[2px] border-black bg-emerald-400 w-6 h-6 flex items-center justify-center shrink-0 font-mono text-xs text-black">4</span>
                 <span>Generate custom client invoices and track payments.</span>
               </li>

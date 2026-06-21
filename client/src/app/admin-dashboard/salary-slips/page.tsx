@@ -233,7 +233,7 @@ export default function SalarySlipsPage() {
 
                 {/* Employee Details Card */}
                 <div className="border-[2.5px] border-black p-4 bg-[#f6f3ec]">
-                  <h4 className="font-label-caps text-xs uppercase font-black border-b-[1.5px] border-black/30 pb-1.5 mb-2.5">Employee Information</h4>
+                  <h4 className="font-label-caps text-xs uppercase font-black border-b-[1.5px] border-black/30/30 pb-1.5 mb-2.5">Employee Information</h4>
                   <div className="grid grid-cols-2 gap-y-1.5 font-mono text-xs text-black">
                     <div>
                       <span className="opacity-75 block text-[10px] uppercase font-bold">NAME</span>

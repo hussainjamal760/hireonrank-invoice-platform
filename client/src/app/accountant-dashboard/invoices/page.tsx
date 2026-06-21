@@ -677,7 +677,7 @@ export default function InvoicesTab() {
                     </h3>
                     <div className="flex flex-col gap-3 font-mono text-sm">
                       {selectedInvoice.items.map((item, idx) => (
-                        <div key={idx} className="flex justify-between border-b-[1px] border-black/20 pb-2">
+                        <div key={idx} className="flex justify-between border-b-[1px] border-black/20/20 pb-2">
                           <div>
                             <div className="font-bold">{item.description}</div>
                             <div className="text-black/60 text-xs">{item.quantity} x ${item.unitPrice}</div>

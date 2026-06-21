@@ -1272,7 +1272,7 @@ export default function InvoiceDesignerPage() {
                           setInvoiceItems(newItems);
                         }}
                         placeholder="Description"
-                        className="w-full bg-transparent border-b-[2px] border-black/10 focus:border-black p-1 font-bold text-xs mb-2 outline-none"
+                        className="w-full bg-transparent border-b-[2px] border-black/10/10 focus:border-black p-1 font-bold text-xs mb-2 outline-none"
                       />
                       <div className="flex gap-2">
                         <div className="flex-1">
@@ -1314,7 +1314,7 @@ export default function InvoiceDesignerPage() {
                         { id: Date.now().toString(), description: 'New Item', quantity: 1, unitPrice: 0 }
                       ]);
                     }}
-                    className="w-full border-[2px] border-dashed border-black/30 p-2 text-xs font-black uppercase text-black/50 hover:bg-[#FACC15] hover:text-black hover:border-black transition-all flex items-center justify-center gap-1"
+                    className="w-full border-[2px] border-dashed border-black/30/30 p-2 text-xs font-black uppercase text-black/50 hover:bg-[#FACC15] hover:text-black hover:border-black transition-all flex items-center justify-center gap-1"
                   >
                     <Plus size={14} /> Add Line Item
                   </button>
@@ -1605,7 +1605,7 @@ export default function InvoiceDesignerPage() {
                 {sections.map(section => {
                   const IconComponent = ICON_MAP[section.icon] || FileText;
                   return (
-                    <div key={section.id} className="flex items-center justify-between py-2 border-b border-black/10">
+                    <div key={section.id} className="flex items-center justify-between py-2 border-b border-black/10/10">
                       <div className="flex items-center gap-2">
                         <IconComponent size={14} className={section.visible ? 'text-black' : 'text-black/30'} />
                         <span className={`text-[11px] font-bold uppercase ${section.visible ? '' : 'text-black/40'}`}>{section.label}</span>
@@ -1678,7 +1678,7 @@ export default function InvoiceDesignerPage() {
               </div>
 
               {savedTemplates.length === 0 ? (
-                <div className="text-center py-6 border-[2px] border-dashed border-black/20">
+                <div className="text-center py-6 border-[2px] border-dashed border-black/20/20">
                   <Layers size={28} className="mx-auto text-black/20 mb-2" />
                   <p className="text-xs font-bold text-black/40">No templates yet. Design your first template and save it!</p>
                 </div>
@@ -1707,7 +1707,7 @@ export default function InvoiceDesignerPage() {
                         <div className="p-2 border-t-[2px] border-black">
                           <div className="text-[10px] font-black uppercase truncate">{t.name}</div>
                           <div className="text-[8px] font-mono text-black/40 mt-0.5">{new Date(t.updatedAt).toLocaleDateString()}</div>
-                          <div className="text-[8px] font-bold uppercase mt-1 px-1 py-0.5 border-[1px] border-black/20 inline-block" style={{ color: tPreset.primary }}>
+                          <div className="text-[8px] font-bold uppercase mt-1 px-1 py-0.5 border-[1px] border-black/20/20 inline-block" style={{ color: tPreset.primary }}>
                             {tPreset.label}
                           </div>
                         </div>

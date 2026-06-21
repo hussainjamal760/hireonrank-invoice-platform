@@ -222,7 +222,7 @@ export default function SettingsPage() {
               className={`flex items-center gap-3 p-4 font-label-caps uppercase font-black tracking-widest text-sm transition-all border-[3px] ${
                 activeTab === "profile" 
                   ? "bg-[#FACC15] text-black border-black shadow-[4px_4px_0_0_#000000] translate-x-[-4px] translate-y-[-4px]" 
-                  : "bg-white text-black border-transparent hover:border-black/20"
+                  : "bg-white text-black border-transparent hover:border-black/20/20"
               }`}
             >
               <User size={20} /> Personal Profile
@@ -232,7 +232,7 @@ export default function SettingsPage() {
               className={`flex items-center gap-3 p-4 font-label-caps uppercase font-black tracking-widest text-sm transition-all border-[3px] ${
                 activeTab === "company" 
                   ? "bg-[#FACC15] text-black border-black shadow-[4px_4px_0_0_#000000] translate-x-[-4px] translate-y-[-4px]" 
-                  : "bg-white text-black border-transparent hover:border-black/20"
+                  : "bg-white text-black border-transparent hover:border-black/20/20"
               }`}
             >
               <Building2 size={20} /> Company Settings
@@ -279,7 +279,7 @@ export default function SettingsPage() {
                           type="email"
                           disabled
                           value={profileForm.email}
-                          className="bg-black/5 border-[3px] border-black/20 p-3 font-body-md font-bold text-black/50 cursor-not-allowed"
+                          className="bg-black/5 border-[3px] border-black/20/20 p-3 font-body-md font-bold text-black/50 cursor-not-allowed"
                         />
                       </div>
                       <div className="flex flex-col gap-2">
