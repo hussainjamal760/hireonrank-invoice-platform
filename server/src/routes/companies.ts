@@ -55,6 +55,8 @@ router.get('/current', authenticateToken, requireCompany, async (req: AuthReques
         id: company._id,
         name: company.name,
         address: company.address,
+        contactNumber: company.contactNumber,
+        website: company.website,
         country: company.country,
         companyType: company.companyType,
         employeesCount: company.employeesCount,
@@ -625,7 +627,7 @@ router.put(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      const { name, address, country, location, companyType, employeesCount, logo, departments } = req.body;
+      const { name, address, country, location, companyType, employeesCount, logo, departments, contactNumber, website } = req.body;
 
       const company = await Company.findById(req.user.currentCompanyId);
       if (!company) {
@@ -634,6 +636,8 @@ router.put(
 
       if (name) company.name = name.trim();
       if (address !== undefined) company.address = address;
+      if (contactNumber !== undefined) company.contactNumber = contactNumber;
+      if (website !== undefined) company.website = website;
       if (country !== undefined) company.country = country;
       if (location !== undefined) company.location = location;
       if (companyType !== undefined) company.companyType = companyType;
@@ -661,6 +665,8 @@ router.put(
           name: company.name,
           logo: company.logo,
           address: company.address,
+          contactNumber: company.contactNumber,
+          website: company.website,
           country: company.country,
           location: company.location,
           companyType: company.companyType,

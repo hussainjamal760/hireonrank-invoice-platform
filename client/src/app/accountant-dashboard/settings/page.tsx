@@ -30,6 +30,8 @@ export default function SettingsPage() {
   const [companyForm, setCompanyForm] = useState({
     name: "",
     address: "",
+    contactNumber: "",
+    website: "",
     country: "",
     companyType: "",
     employeesCount: "",
@@ -77,6 +79,8 @@ export default function SettingsPage() {
           setCompanyForm({
             name: companyData.company.name || "",
             address: companyData.company.address || "",
+            contactNumber: companyData.company.contactNumber || "",
+            website: companyData.company.website || "",
             country: companyData.company.country || "",
             companyType: companyData.company.companyType || "",
             employeesCount: companyData.company.employeesCount?.toString() || "",
@@ -142,6 +146,8 @@ export default function SettingsPage() {
         body: JSON.stringify({
           name: companyForm.name,
           address: companyForm.address,
+          contactNumber: companyForm.contactNumber,
+          website: companyForm.website,
           country: companyForm.country,
           companyType: companyForm.companyType,
           employeesCount: parseInt(companyForm.employeesCount) || undefined,
@@ -379,6 +385,32 @@ export default function SettingsPage() {
                           type="text"
                           value={companyForm.address}
                           onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })}
+                          className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15] font-bold"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <label className="font-label-caps uppercase text-xs font-bold text-black/60 flex items-center gap-2">
+                          <Phone size={14} /> Contact Number
+                        </label>
+                        <input
+                          type="text"
+                          value={companyForm.contactNumber}
+                          onChange={(e) => setCompanyForm({ ...companyForm, contactNumber: e.target.value })}
+                          placeholder="+1 234 567 8900"
+                          className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15] font-bold"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <label className="font-label-caps uppercase text-xs font-bold text-black/60 flex items-center gap-2">
+                          <Globe size={14} /> Website
+                        </label>
+                        <input
+                          type="url"
+                          value={companyForm.website}
+                          onChange={(e) => setCompanyForm({ ...companyForm, website: e.target.value })}
+                          placeholder="https://example.com"
                           className="bg-[#f6f3ec] border-[3px] border-black p-3 font-body-md focus:outline-none focus:bg-[#FACC15] font-bold"
                         />
                       </div>

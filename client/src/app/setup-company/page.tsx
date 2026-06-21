@@ -29,6 +29,8 @@ export default function SetupCompany() {
 
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
+  const [website, setWebsite] = useState("");
   const [companyType, setCompanyType] = useState("");
   const [country, setCountry] = useState("");
   const [employeesCount, setEmployeesCount] = useState("");
@@ -180,6 +182,8 @@ export default function SetupCompany() {
         body: JSON.stringify({ 
           name, 
           address, 
+          contactNumber,
+          website,
           location, 
           companyType, 
           country,
@@ -268,6 +272,30 @@ export default function SetupCompany() {
                 required
                 className="w-full bg-background border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all" 
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="font-label-caps uppercase text-on-background">Contact Number</label>
+                <input 
+                  type="text" 
+                  value={contactNumber}
+                  onChange={(e) => setContactNumber(e.target.value)}
+                  placeholder="+1 234 567 8900"
+                  className="w-full bg-background border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all" 
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="font-label-caps uppercase text-on-background">Company Website</label>
+                <input 
+                  type="url" 
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://example.com"
+                  className="w-full bg-background border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all" 
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

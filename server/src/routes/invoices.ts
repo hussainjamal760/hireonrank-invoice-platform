@@ -548,7 +548,7 @@ router.post(
       const invoiceUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/public/invoice/${invoice.publicLinkToken}`;
       
       const mailOptions = {
-        from: `"${company.name}" <${process.env.EMAIL_USER || process.env.SMTP_USER || 'no-reply@radicalledger.com'}>`,
+        from: `"${company.name}" <${process.env.EMAIL_USER || process.env.SMTP_USER || 'no-reply@voicy.com'}>`,
         to: invoice.clientEmail,
         subject: `Invoice ${invoice.invoiceNumber} from ${company.name}`,
         text: `Dear ${invoice.clientName},\n\nPlease find attached your invoice ${invoice.invoiceNumber} for the amount of $${invoice.totalAmount.toLocaleString()}.\n\nThank you for your business!\n\n${company.name}`,
