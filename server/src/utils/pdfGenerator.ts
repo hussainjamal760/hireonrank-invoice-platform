@@ -55,8 +55,11 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
-  if (company?.address) doc.text(company.address, 15, currentY + 6);
-  if (company?.country) doc.text(company.country, 15, currentY + 11);
+  let addrY = currentY + 6;
+  if (company?.address) { doc.text(company.address, 15, addrY); addrY += 5; }
+  if (company?.country) { doc.text(company.country, 15, addrY); addrY += 5; }
+  if (company?.contactNumber) { doc.text(`Phone: ${company.contactNumber}`, 15, addrY); addrY += 5; }
+  if (company?.website) { doc.text(`Web: ${company.website}`, 15, addrY); addrY += 5; }
 
   // Employee Info (Right Side)
   doc.setFontSize(10);
@@ -173,8 +176,11 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(100, 116, 139);
-  if (company?.address) doc.text(company.address, 15, currentY + 6);
-  if (company?.country) doc.text(company.country, 15, currentY + 11);
+  let cY = currentY + 6;
+  if (company?.address) { doc.text(company.address, 15, cY); cY += 5; }
+  if (company?.country) { doc.text(company.country, 15, cY); cY += 5; }
+  if (company?.contactNumber) { doc.text(`Phone: ${company.contactNumber}`, 15, cY); cY += 5; }
+  if (company?.website) { doc.text(`Web: ${company.website}`, 15, cY); cY += 5; }
 
   // Recipient Details (Client)
   doc.setFontSize(10);

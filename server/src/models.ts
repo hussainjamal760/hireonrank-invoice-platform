@@ -53,6 +53,8 @@ export interface ICompany extends Document {
   logo?: string;
   ownerId: mongoose.Types.ObjectId;
   address?: string;
+  contactNumber?: string;
+  website?: string;
   country?: string;
   location?: { lat: number; lng: number };
   companyType?: string;
@@ -67,6 +69,8 @@ const CompanySchema: Schema = new Schema({
   logo: { type: String },
   ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   address: { type: String },
+  contactNumber: { type: String },
+  website: { type: String },
   country: { type: String },
   location: {
     lat: { type: Number },
