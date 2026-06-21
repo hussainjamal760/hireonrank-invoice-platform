@@ -202,7 +202,7 @@ export default function AIInvoicePage() {
         {/* Input Panel */}
         <div className="lg:col-span-6 bg-[#fbfbfa] border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000] space-y-6 relative overflow-hidden">
           {/* Subtle design element */}
-          <div className="absolute top-0 right-0 w-24 h-24 bg-[#FACC15]/10 rounded-full translate-x-12 -translate-y-12 border-4 border-dashed border-black/10"></div>
+          <div className="absolute top-0 right-0 w-24 h-24 bg-[#FACC15]/10 rounded-full translate-x-12 -translate-y-12 border-4 border-dashed border-black/10/10"></div>
 
           <div>
             <h2 className="font-display-md text-xl uppercase font-black mb-1 border-b-[2px] border-black pb-2 flex items-center gap-2">
@@ -290,7 +290,7 @@ export default function AIInvoicePage() {
           </form>
 
           {/* Prompt Suggestions */}
-          <div className="space-y-3.5 pt-4 border-t-2 border-dashed border-black/10">
+          <div className="space-y-3.5 pt-4 border-t-2 border-dashed border-black/10/10">
             <span className="font-label-caps uppercase text-[10px] font-black tracking-wider text-black/40 flex items-center gap-1">
               <HelpCircle size={12} /> Click a prompt example to test
             </span>
@@ -415,7 +415,7 @@ export default function AIInvoicePage() {
                 </div>
 
                 {/* Actions */}
-                <div className="grid grid-cols-2 gap-4 mt-8 pt-4 border-t-[2px] border-black/10">
+                <div className="grid grid-cols-2 gap-4 mt-8 pt-4 border-t-[2px] border-black/10/10">
                   <button
                     onClick={handleDownload}
                     className="bg-black text-[#FACC15] hover:bg-[#FACC15] hover:text-black py-3.5 font-label-caps border-[3px] border-black transition-colors uppercase font-black flex items-center justify-center gap-2 shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] cursor-pointer"
@@ -438,7 +438,7 @@ export default function AIInvoicePage() {
 
                 {/* Mock Document Header */}
                 <div className="space-y-4 opacity-25">
-                  <div className="flex justify-between items-center border-b-2 border-black/30 pb-3">
+                  <div className="flex justify-between items-center border-b-2 border-black/30/30 pb-3">
                     <div className="space-y-2">
                       <div className="h-4 w-28 bg-black rounded"></div>
                       <div className="h-6 w-36 bg-black rounded"></div>
@@ -447,7 +447,7 @@ export default function AIInvoicePage() {
                   </div>
                   
                   {/* Mock Meta Info Block */}
-                  <div className="grid grid-cols-2 gap-4 border-2 border-black/30 p-3">
+                  <div className="grid grid-cols-2 gap-4 border-2 border-black/30/30 p-3">
                     <div className="space-y-1.5">
                       <div className="h-3 w-16 bg-black rounded"></div>
                       <div className="h-4 w-24 bg-black rounded"></div>
@@ -474,11 +474,11 @@ export default function AIInvoicePage() {
 
                 {/* Mock Document Footer */}
                 <div className="space-y-3 opacity-25">
-                  <div className="border-t-2 border-black/30 pt-3 flex justify-between">
+                  <div className="border-t-2 border-black/30/30 pt-3 flex justify-between">
                     <div className="h-3.5 w-16 bg-black rounded"></div>
                     <div className="h-3.5 w-20 bg-black rounded"></div>
                   </div>
-                  <div className="flex justify-between items-center border-t-2 border-black/30 pt-3">
+                  <div className="flex justify-between items-center border-t-2 border-black/30/30 pt-3">
                     <div className="h-10 w-24 bg-black rounded"></div>
                     <div className="h-10 w-24 bg-black rounded"></div>
                   </div>

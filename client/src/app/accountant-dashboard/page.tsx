@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { useCurrencyConverter } from "@/components/useCurrencyConverter";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
+import { exportTableToPDF } from "@/utils/tableExport";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -147,6 +148,17 @@ export default function AccountantDashboard() {
     return formatConvertedCurrency(converted, preferredCurrency, true);
   };
 
+  const handleDownloadReport = () => {
+    const headers = ["Metric", "Value"];
+    const data = [
+      ["Active Employees", stats?.totalEmployees?.toString() || "0"],
+      ["Collected Revenue", displayCurrency(stats?.totalRevenue)],
+      ["Pending Revenue", displayCurrency(stats?.pendingRevenue)],
+      ["Total Payroll Cost", displayCurrency(stats?.totalPayroll)]
+    ];
+    exportTableToPDF("Command Center Report", headers, data, "Accountant_Dashboard_Report");
+  };
+
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col gap-8 pb-12">
       {/* Header */}
@@ -162,12 +174,20 @@ export default function AccountantDashboard() {
           </div>
           <h1 className="font-display-lg text-5xl md:text-6xl text-black uppercase font-black tracking-tighter">Command Center</h1>
         </div>
-        <button 
-          onClick={fetchData}
-          className="bg-black text-white border-[3px] border-black px-6 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-[#FACC15] hover:text-black transition-colors shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
-        >
-          Sync Ledger
-        </button>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleDownloadReport}
+            className="text-black font-label-caps text-xs tracking-widest uppercase font-bold hover:underline underline-offset-4 decoration-[2px]"
+          >
+            Download PDF Report
+          </button>
+          <button 
+            onClick={fetchData}
+            className="bg-black text-white border-[3px] border-black px-6 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-[#FACC15] hover:text-black transition-colors shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
+          >
+            Sync Ledger
+          </button>
+        </div>
       </motion.div>
 
       {/* KPI Stats Cards - Row 1 */}
@@ -356,7 +376,7 @@ export default function AccountantDashboard() {
                 <span className="border-[2px] border-black bg-white w-6 h-6 flex items-center justify-center shrink-0 font-mono text-xs">3</span>
                 <span>Run bulk monthly payroll and auto-generate invoice ledgers.</span>
               </li>
-              <li className="flex items-start gap-2 pt-4 border-t-[2px] border-black/20 mt-4">
+              <li className="flex items-start gap-2 pt-4 border-t-[2px] border-black/20/20 mt-4">
                 <span className="border-[2px] border-black bg-emerald-400 w-6 h-6 flex items-center justify-center shrink-0 font-mono text-xs text-black">4</span>
                 <span>Generate custom client invoices and track payments.</span>
               </li>

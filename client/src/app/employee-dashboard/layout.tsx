@@ -7,6 +7,8 @@ import {
   Home, FileText, Settings, Menu, X, Zap
 } from "lucide-react";
 import { BrutalistLoader } from "@/components/BrutalistLoader";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/employee-dashboard", icon: Home },
@@ -63,7 +65,8 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   }
 
   return (
-    <div className="flex h-screen bg-white text-black selection:bg-[#FACC15] selection:text-black overflow-hidden font-body-md">
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <div className="flex h-screen bg-white text-black selection:bg-[#FACC15] selection:text-black overflow-hidden font-body-md">
       
       {/* Sidebar */}
       <aside
@@ -155,12 +158,16 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative bg-white">
+      <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative bg-white dashboard-dark-mode">
         <div className="absolute inset-0 pattern-grid opacity-10 pointer-events-none fixed"></div>
         <div className="relative z-10 p-6 sm:p-8 lg:p-12">
           {children}
         </div>
       </main>
-    </div>
+        <div className="fixed bottom-6 right-6 z-[100]">
+          <ThemeToggle />
+        </div>
+      </div>
+    </ThemeProvider>
   );
 }

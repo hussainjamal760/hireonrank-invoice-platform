@@ -151,7 +151,7 @@ export default function ActivityLogsPage() {
               </thead>
               <tbody>
                 {filteredLogs.map((log) => (
-                  <tr key={log._id} className="border-b-[2px] border-black/10 hover:bg-[#FACC15]/10 transition-colors group">
+                  <tr key={log._id} className="border-b-[2px] border-black/10/10 hover:bg-[#FACC15]/10 transition-colors group">
                     <td className="p-4">
                       <div className={`inline-flex items-center gap-2 px-3 py-1 border-[2px] border-black shadow-[2px_2px_0_0_#000000] ${log.type === 'INVOICE' ? 'bg-blue-100' : 'bg-emerald-100'}`}>
                         {log.type === 'INVOICE' ? <FileText size={14} className="text-black" strokeWidth={3} /> : <Banknote size={14} className="text-black" strokeWidth={3} />}

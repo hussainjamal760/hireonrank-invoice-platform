@@ -27,7 +27,7 @@ export default function Login() {
         const elements = containerRef.current.querySelectorAll('.parallax-element');
         elements.forEach((el, index) => {
           const speed = (index + 1) * 0.5;
-          (el as HTMLElement).style.transform = `translate(${moveX * speed}px, ${moveY * speed}px) rotate(${(el as HTMLElement).dataset.rot}deg)`;
+          (el as HTMLElement).style.transform = `translate(${moveX * speed}px, ${moveY * speed}px)`;
         });
       }
     };
@@ -453,13 +453,13 @@ export default function Login() {
         <div className="relative w-full h-full max-w-2xl mx-auto z-20 flex items-center justify-center pointer-events-none">
           
           {/* Main Hero Invoice */}
-          <motion.div 
-            initial={{ y: 100, opacity: 0, rotate: -5 }}
-            animate={{ y: 0, opacity: 1, rotate: -2 }}
-            transition={{ type: "spring", stiffness: 100, delay: 0.2 }}
-            className="parallax-element absolute bg-white border-[4px] border-on-background w-[400px] neo-brutal-shadow-lg"
-            data-rot="-2"
-          >
+          <div className="parallax-element absolute inset-0 flex items-center justify-center pointer-events-none">
+            <motion.div 
+              initial={{ y: 100, opacity: 0, rotate: -5 }}
+              animate={{ y: 0, opacity: 1, rotate: -2 }}
+              transition={{ type: "spring", stiffness: 100, delay: 0.2 }}
+              className="absolute bg-white border-[4px] border-on-background w-[400px] neo-brutal-shadow-lg pointer-events-auto"
+            >
             <div className="border-b-[3px] border-on-background bg-surface-container-highest p-3 flex justify-between items-center">
               <span className="font-label-caps uppercase flex items-center gap-2"><FileText size={16}/> INVOICE #9092</span>
               <span className="bg-[#E5F6E5] text-[#008A00] border-[2px] border-on-background px-2 py-1 font-label-caps text-[10px] flex items-center gap-1">
@@ -490,15 +490,16 @@ export default function Login() {
               </div>
             </div>
           </motion.div>
+          </div>
 
           {/* Floating Salary Slip */}
-          <motion.div 
-            initial={{ x: 200, opacity: 0, rotate: 10 }}
-            animate={{ x: 120, y: 150, opacity: 1, rotate: 8 }}
-            transition={{ type: "spring", stiffness: 80, delay: 0.4 }}
-            className="parallax-element absolute bg-on-background text-white border-[4px] border-white w-[300px] shadow-[8px_8px_0_0_#ffffff]"
-            data-rot="8"
-          >
+          <div className="parallax-element absolute inset-0 flex items-center justify-center pointer-events-none">
+            <motion.div 
+              initial={{ x: 200, opacity: 0, rotate: 10 }}
+              animate={{ x: 120, y: 150, opacity: 1, rotate: 8 }}
+              transition={{ type: "spring", stiffness: 80, delay: 0.4 }}
+              className="absolute bg-on-background text-white border-[4px] border-white w-[300px] shadow-[8px_8px_0_0_#ffffff] pointer-events-auto"
+            >
             <div className="border-b-[3px] border-white p-3">
               <span className="font-label-caps uppercase text-primary-container">Salary Slip · Jun</span>
             </div>
@@ -516,15 +517,16 @@ export default function Login() {
               </div>
             </div>
           </motion.div>
+          </div>
 
           {/* Floating Status Toast */}
-          <motion.div 
-            initial={{ x: -200, opacity: 0, rotate: -15 }}
-            animate={{ x: -150, y: -120, opacity: 1, rotate: -10 }}
-            transition={{ type: "spring", stiffness: 90, delay: 0.6 }}
-            className="parallax-element absolute bg-white border-[4px] border-on-background p-4 neo-brutal-shadow flex items-center gap-4"
-            data-rot="-10"
-          >
+          <div className="parallax-element absolute inset-0 flex items-center justify-center pointer-events-none">
+            <motion.div 
+              initial={{ x: -200, opacity: 0, rotate: -15 }}
+              animate={{ x: -150, y: -120, opacity: 1, rotate: -10 }}
+              transition={{ type: "spring", stiffness: 90, delay: 0.6 }}
+              className="absolute bg-white border-[4px] border-on-background p-4 neo-brutal-shadow flex items-center gap-4 pointer-events-auto"
+            >
             <div className="w-12 h-12 bg-primary-container border-[3px] border-on-background flex items-center justify-center animate-bounce">
               <Zap size={24} className="text-on-background" />
             </div>
@@ -533,6 +535,7 @@ export default function Login() {
               <p className="font-data-md text-on-surface-variant">Cleared successfully</p>
             </div>
           </motion.div>
+          </div>
 
         </div>
       </div>

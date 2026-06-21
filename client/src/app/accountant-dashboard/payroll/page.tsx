@@ -8,6 +8,7 @@ import {
   Download, Check
 } from "lucide-react";
 import { TableSkeleton } from "@/components/TableSkeleton";
+import { exportTableToCSV, exportTableToPDF } from "@/utils/tableExport";
 
 interface PayrollRecord {
   _id: string;
@@ -193,6 +194,33 @@ export default function PayrollTab() {
     ? records 
     : records.filter(r => r.month === filterMonth);
 
+  const handleExportCSV = () => {
+    const data = filteredRecords.map(r => ({
+      Employee: r.employeeId?.name || "Deleted Employee",
+      Month: r.month,
+      "Base Salary": r.baseSalary,
+      Allowances: r.totalAllowances,
+      Taxes: r.totalTax,
+      "Net Salary": r.netSalary,
+      Status: r.status || "PROCESSED"
+    }));
+    exportTableToCSV(data, "Payroll_Audit_Ledger");
+  };
+
+  const handleExportPDF = () => {
+    const headers = ["Employee", "Month", "Base Salary", "Allowances", "Taxes", "Net Salary", "Status"];
+    const data = filteredRecords.map(r => [
+      r.employeeId?.name || "Deleted Employee",
+      r.month,
+      `${getCurrencySymbol(r.currency || 'USD')}${r.baseSalary?.toLocaleString()}`,
+      `+${getCurrencySymbol(r.currency || 'USD')}${r.totalAllowances?.toLocaleString()}`,
+      `-${getCurrencySymbol(r.currency || 'USD')}${r.totalTax?.toLocaleString()}`,
+      `${getCurrencySymbol(r.currency || 'USD')}${r.netSalary?.toLocaleString()}`,
+      r.status || "PROCESSED"
+    ]);
+    exportTableToPDF("Payroll Audit Ledger", headers, data, "Payroll_Audit_Ledger");
+  };
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12">
       {/* Header */}
@@ -287,9 +315,25 @@ export default function PayrollTab() {
 
       {/* Audit Log Table */}
       <div className="bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000]">
-        <h2 className="font-display-md text-2xl uppercase font-black mb-6 border-b-[3px] border-black pb-4 flex items-center gap-2">
-          <FileSpreadsheet size={22} /> Payroll Audit Ledger
-        </h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 border-b-[3px] border-black pb-4 gap-4">
+          <h2 className="font-display-md text-2xl uppercase font-black flex items-center gap-2">
+            <FileSpreadsheet size={22} /> Payroll Audit Ledger
+          </h2>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleExportCSV}
+              className="bg-white text-black border-[2px] border-black px-3 py-1 font-label-caps text-xs font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              CSV
+            </button>
+            <button 
+              onClick={handleExportPDF}
+              className="bg-[#FACC15] text-black border-[2px] border-black px-3 py-1 font-label-caps text-xs font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              PDF
+            </button>
+          </div>
+        </div>
 
         {loading ? (
           <TableSkeleton columns={8} rows={5} />

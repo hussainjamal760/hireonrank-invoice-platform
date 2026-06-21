@@ -8,9 +8,10 @@ import {
   FileText, Calendar, ShieldAlert, CheckCircle2,
   ListFilter, Play, ArrowUpRight, DollarSign, Check,
   Plus, Download, Search, MoreVertical, Eye, Send,
-  Clock, X, Copy, Mail
+  Clock, X, Copy, Mail, QrCode
 } from "lucide-react";
 import { TableSkeleton } from "@/components/TableSkeleton";
+import { exportTableToCSV, exportTableToPDF } from "@/utils/tableExport";
 
 interface Invoice {
   _id: string;
@@ -225,6 +226,31 @@ export default function InvoicesTab() {
     return matchesMonth && matchesStatus && matchesSearch;
   });
 
+  const handleExportCSV = () => {
+    const data = filteredInvoices.map((i: any) => ({
+      "Invoice #": i.invoiceNumber,
+      Type: i.type,
+      Client: i.displayClient,
+      "Period / Due": i.displayDate,
+      Amount: i.displayAmount,
+      Status: i.status
+    }));
+    exportTableToCSV(data, "Invoices_Ledger");
+  };
+
+  const handleExportPDF = () => {
+    const headers = ["Invoice #", "Type", "Client", "Period / Due", "Amount", "Status"];
+    const data = filteredInvoices.map((i: any) => [
+      i.invoiceNumber,
+      i.type,
+      i.displayClient,
+      i.displayDate,
+      `$${i.displayAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      i.status
+    ]);
+    exportTableToPDF("Invoices Ledger", headers, data, "Invoices_Ledger");
+  };
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12 relative">
       {/* Header */}
@@ -342,9 +368,25 @@ export default function InvoicesTab() {
 
       {/* Invoice Ledger Table */}
       <div className="bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000]">
-        <h2 className="font-display-md text-2xl uppercase font-black mb-6 border-b-[3px] border-black pb-4 flex items-center gap-2">
-          <FileText size={22} /> Invoices Ledger
-        </h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 border-b-[3px] border-black pb-4 gap-4">
+          <h2 className="font-display-md text-2xl uppercase font-black flex items-center gap-2">
+            <FileText size={22} /> Invoices Ledger
+          </h2>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleExportCSV}
+              className="bg-white text-black border-[2px] border-black px-3 py-1 font-label-caps text-xs font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              CSV
+            </button>
+            <button 
+              onClick={handleExportPDF}
+              className="bg-[#FACC15] text-black border-[2px] border-black px-3 py-1 font-label-caps text-xs font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              PDF
+            </button>
+          </div>
+        </div>
 
         {loading ? (
           <TableSkeleton columns={7} rows={5} />
@@ -532,18 +574,44 @@ export default function InvoicesTab() {
                   </button>
 
                   {showDeliveryModal.publicLinkToken && (
-                    <button
-                      onClick={() => {
-                        const url = `${window.location.origin}/public/invoice/${showDeliveryModal.publicLinkToken}`;
-                        navigator.clipboard.writeText(url);
-                        setSuccess("Public link copied to clipboard!");
-                        setShowDeliveryModal(null);
-                        setTimeout(() => setSuccess(""), 3000);
-                      }}
-                      className="w-full bg-white text-black hover:bg-gray-100 border-[3px] border-black p-4 font-black uppercase text-sm shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2"
-                    >
-                      <Copy size={18} /> Copy Public Link
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          const url = `${window.location.origin}/public/invoice/${showDeliveryModal.publicLinkToken}`;
+                          navigator.clipboard.writeText(url);
+                          setSuccess("Public link copied to clipboard!");
+                          setShowDeliveryModal(null);
+                          setTimeout(() => setSuccess(""), 3000);
+                        }}
+                        className="w-full bg-white text-black hover:bg-gray-100 border-[3px] border-black p-4 font-black uppercase text-sm shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2"
+                      >
+                        <Copy size={18} /> Copy Public Link
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const url = `${window.location.origin}/public/invoice/${showDeliveryModal.publicLinkToken}`;
+                          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(url)}`;
+                          try {
+                            const res = await fetch(qrUrl);
+                            const blob = await res.blob();
+                            const objectUrl = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = objectUrl;
+                            a.download = `QR-${showDeliveryModal.invoiceNumber}.png`;
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                            URL.revokeObjectURL(objectUrl);
+                            setSuccess("QR code downloaded successfully!");
+                          } catch (err) {
+                            setError("Failed to download QR code");
+                          }
+                        }}
+                        className="w-full bg-white text-black hover:bg-gray-100 border-[3px] border-black p-4 font-black uppercase text-sm shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2"
+                      >
+                        <QrCode size={18} /> Download QR
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -650,7 +718,7 @@ export default function InvoicesTab() {
                     </h3>
                     <div className="flex flex-col gap-3 font-mono text-sm">
                       {selectedInvoice.items.map((item, idx) => (
-                        <div key={idx} className="flex justify-between border-b-[1px] border-black/20 pb-2">
+                        <div key={idx} className="flex justify-between border-b-[1px] border-black/20/20 pb-2">
                           <div>
                             <div className="font-bold">{item.description}</div>
                             <div className="text-black/60 text-xs">{item.quantity} x ${item.unitPrice}</div>

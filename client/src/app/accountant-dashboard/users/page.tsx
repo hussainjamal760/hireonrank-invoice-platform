@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { exportTableToCSV, exportTableToPDF } from "@/utils/tableExport";
 
 interface Member {
   id: string;
@@ -319,6 +320,46 @@ export default function UsersPage() {
   const pendingInvitesCount = invitations.length;
   const adminCount = members.filter((m) => m.role === "OWNER" || m.role === "ADMIN").length;
 
+  const handleExportCSV = () => {
+    if (activeTab === "members") {
+      const data = members.map(m => ({
+        Name: m.user?.name || "Uninitialized",
+        Email: m.user?.email || "N/A",
+        Role: m.role,
+        Joined: new Date(m.createdAt).toLocaleDateString()
+      }));
+      exportTableToCSV(data, "Active_Members_Report");
+    } else if (activeTab === "invites") {
+      const data = invitations.map(i => ({
+        Email: i.email,
+        "Invited As": i.role,
+        "Date Sent": new Date(i.createdAt).toLocaleDateString()
+      }));
+      exportTableToCSV(data, "Pending_Invites_Report");
+    }
+  };
+
+  const handleExportPDF = () => {
+    if (activeTab === "members") {
+      const headers = ["Name", "Email", "Role", "Joined"];
+      const data = members.map(m => [
+        m.user?.name || "Uninitialized",
+        m.user?.email || "N/A",
+        m.role,
+        new Date(m.createdAt).toLocaleDateString()
+      ]);
+      exportTableToPDF("Active Members Directory", headers, data, "Active_Members_Report");
+    } else if (activeTab === "invites") {
+      const headers = ["Email", "Invited As", "Date Sent"];
+      const data = invitations.map(i => [
+        i.email,
+        i.role,
+        new Date(i.createdAt).toLocaleDateString()
+      ]);
+      exportTableToPDF("Pending Invitations", headers, data, "Pending_Invites_Report");
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12">
       {/* Header */}
@@ -441,37 +482,55 @@ export default function UsersPage() {
         <div className="w-full lg:w-8/12">
           <div className="bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000]">
             {/* Tabs */}
-            <div className="flex border-b-[3px] border-black mb-6">
-              <button
-                onClick={() => setActiveTab("members")}
-                className={`px-6 py-3 font-label-caps uppercase font-bold text-sm tracking-wider border-r-[3px] border-black transition-all ${
-                  activeTab === "members"
-                    ? "bg-[#FACC15] text-black"
-                    : "bg-white text-black/60 hover:bg-[#FACC15]/20"
-                }`}
-              >
-                Active Members ({activeMembersCount})
-              </button>
-              <button
-                onClick={() => setActiveTab("invites")}
-                className={`px-6 py-3 font-label-caps uppercase font-bold text-sm tracking-wider border-r-[3px] border-black transition-all ${
-                  activeTab === "invites"
-                    ? "bg-[#FACC15] text-black"
-                    : "bg-white text-black/60 hover:bg-[#FACC15]/20"
-                }`}
-              >
-                Pending Invitations ({pendingInvitesCount})
-              </button>
-              <button
-                onClick={() => setActiveTab("batch")}
-                className={`px-6 py-3 font-label-caps uppercase font-bold text-sm tracking-wider border-r-[3px] border-black transition-all ${
-                  activeTab === "batch"
-                    ? "bg-[#FACC15] text-black"
-                    : "bg-white text-black/60 hover:bg-[#FACC15]/20"
-                }`}
-              >
-                Batch Invite
-              </button>
+            <div className="flex flex-col sm:flex-row border-b-[3px] border-black mb-6 justify-between items-start sm:items-center">
+              <div className="flex flex-wrap border-r-[3px] sm:border-r-0 border-black sm:border-none">
+                <button
+                  onClick={() => setActiveTab("members")}
+                  className={`px-6 py-3 font-label-caps uppercase font-bold text-sm tracking-wider border-b-[3px] sm:border-b-0 sm:border-r-[3px] border-black transition-all ${
+                    activeTab === "members"
+                      ? "bg-[#FACC15] text-black"
+                      : "bg-white text-black/60 hover:bg-[#FACC15]/20"
+                  }`}
+                >
+                  Active Members ({activeMembersCount})
+                </button>
+                <button
+                  onClick={() => setActiveTab("invites")}
+                  className={`px-6 py-3 font-label-caps uppercase font-bold text-sm tracking-wider border-b-[3px] sm:border-b-0 sm:border-r-[3px] border-black transition-all ${
+                    activeTab === "invites"
+                      ? "bg-[#FACC15] text-black"
+                      : "bg-white text-black/60 hover:bg-[#FACC15]/20"
+                  }`}
+                >
+                  Pending Invitations ({pendingInvitesCount})
+                </button>
+                <button
+                  onClick={() => setActiveTab("batch")}
+                  className={`px-6 py-3 font-label-caps uppercase font-bold text-sm tracking-wider border-b-[3px] sm:border-b-0 sm:border-r-[3px] border-black transition-all ${
+                    activeTab === "batch"
+                      ? "bg-[#FACC15] text-black"
+                      : "bg-white text-black/60 hover:bg-[#FACC15]/20"
+                  }`}
+                >
+                  Batch Invite
+                </button>
+              </div>
+              {(activeTab === "members" || activeTab === "invites") && (
+                <div className="flex gap-2 p-3 sm:p-0 sm:pr-4">
+                  <button 
+                    onClick={handleExportCSV}
+                    className="bg-white text-black border-[2px] border-black px-3 py-1 font-label-caps text-xs font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                  >
+                    CSV
+                  </button>
+                  <button 
+                    onClick={handleExportPDF}
+                    className="bg-[#FACC15] text-black border-[2px] border-black px-3 py-1 font-label-caps text-xs font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                  >
+                    PDF
+                  </button>
+                </div>
+              )}
             </div>
 
             {loading ? (
