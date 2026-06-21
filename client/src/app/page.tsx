@@ -95,12 +95,12 @@ export default function Home() {
             </FadeIn>
             <FadeIn delay={0.3}>
               <div className="flex flex-col sm:flex-row gap-6 mt-4">
-                <button className="bg-on-background text-background px-8 py-5 font-label-caps text-[18px] border-[3px] border-on-background neo-brutal-shadow-lg hover:neo-brutal-shadow-active hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase tracking-wider flex items-center justify-center gap-3">
-                  Start free <span className="text-sm opacity-70">— no card needed</span> <ArrowRight size={20} />
-                </button>
-                <button className="bg-white text-on-background px-8 py-5 font-label-caps text-[18px] border-[3px] border-on-background neo-brutal-shadow hover:bg-surface-container-highest hover:neo-brutal-shadow-active hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase tracking-wider flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 bg-primary-container rounded-full animate-pulse border-[2px] border-on-background"></span> Watch a 2 min demo
-                </button>
+                <Link href="/login" className="bg-on-background text-background px-8 py-5 font-label-caps text-[18px] border-[3px] border-on-background neo-brutal-shadow-lg hover:neo-brutal-shadow-active hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase tracking-wider flex items-center justify-center gap-3">
+                  Open your <span className="text-sm opacity-70">Dashboard</span> <ArrowRight size={20} />
+                </Link>
+                <Link href="/signup" className="bg-white text-on-background px-8 py-5 font-label-caps text-[18px] border-[3px] border-on-background neo-brutal-shadow hover:bg-surface-container-highest hover:neo-brutal-shadow-active hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 bg-primary-container rounded-full animate-pulse border-[2px] border-on-background"></span> Create an Account
+                </Link>
               </div>
             </FadeIn>
             <FadeIn delay={0.4}>
@@ -679,9 +679,9 @@ export default function Home() {
                     <li className="flex items-center gap-3"><Check size={20} className="text-primary" /> Up to 3 employees</li>
                     <li className="flex items-center gap-3"><Check size={20} className="text-primary" /> Basic dashboard</li>
                   </ul>
-                  <button className="w-full py-4 font-label-caps text-lg border-[3px] border-on-background bg-white hover:bg-surface-container-highest neo-brutal-shadow hover:neo-brutal-shadow-active transition-all uppercase font-black">
+                  <Link href="/login" className="block text-center w-full py-4 font-label-caps text-lg border-[3px] border-on-background bg-white hover:bg-surface-container-highest neo-brutal-shadow hover:neo-brutal-shadow-active transition-all uppercase font-black">
                     Get started
-                  </button>
+                  </Link>
                 </div>
               </FadeIn>
 
@@ -701,9 +701,9 @@ export default function Home() {
                     <li className="flex items-center gap-3"><Check size={20} className="text-on-background" /> Full payroll & salary slips</li>
                     <li className="flex items-center gap-3"><Check size={20} className="text-on-background" /> Analytics dashboard</li>
                   </ul>
-                  <button className="w-full py-4 font-label-caps text-lg border-[3px] border-on-background bg-on-background text-white neo-brutal-shadow-lg hover:neo-brutal-shadow-active transition-all uppercase font-black">
+                  <Link href="/signup" className="block text-center w-full py-4 font-label-caps text-lg border-[3px] border-on-background bg-on-background text-white neo-brutal-shadow-lg hover:neo-brutal-shadow-active transition-all uppercase font-black">
                     Start free trial
-                  </button>
+                  </Link>
                 </div>
               </FadeIn>
 
@@ -722,9 +722,9 @@ export default function Home() {
                     <li className="flex items-center gap-3"><Check size={20} className="text-primary" /> Role-based access control</li>
                     <li className="flex items-center gap-3"><Check size={20} className="text-primary" /> Priority support</li>
                   </ul>
-                  <button className="w-full py-4 font-label-caps text-lg border-[3px] border-on-background bg-white hover:bg-surface-container-highest neo-brutal-shadow hover:neo-brutal-shadow-active transition-all uppercase font-black">
+                  <Link href="/contact" className="block text-center w-full py-4 font-label-caps text-lg border-[3px] border-on-background bg-white hover:bg-surface-container-highest neo-brutal-shadow hover:neo-brutal-shadow-active transition-all uppercase font-black">
                     Contact sales
-                  </button>
+                  </Link>
                 </div>
               </FadeIn>
             </div>
@@ -741,12 +741,12 @@ export default function Home() {
               No credit card. No setup call. Just a cleaner way to run your back office.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 w-full justify-center">
-              <button className="bg-primary-container text-on-background px-12 py-5 font-label-caps text-[20px] border-[4px] border-primary-container hover:bg-white hover:border-white transition-all uppercase font-black w-full sm:w-auto shadow-[8px_8px_0_0_#FACC15] hover:shadow-[4px_4px_0_0_#ffffff] hover:translate-x-[4px] hover:translate-y-[4px]">
+              <Link href="/login" className="block sm:inline-block text-center bg-primary-container text-on-background px-12 py-5 font-label-caps text-[20px] border-[4px] border-primary-container hover:bg-white hover:border-white transition-all uppercase font-black w-full sm:w-auto shadow-[8px_8px_0_0_#FACC15] hover:shadow-[4px_4px_0_0_#ffffff] hover:translate-x-[4px] hover:translate-y-[4px]">
                 Start free
-              </button>
-              <button className="bg-transparent text-white px-12 py-5 font-label-caps text-[20px] border-[4px] border-white hover:bg-surface-variant hover:text-on-background transition-all uppercase font-black w-full sm:w-auto">
-                Book a demo
-              </button>
+              </Link>
+              <Link href="/signup" className="block sm:inline-block text-center bg-transparent text-white px-12 py-5 font-label-caps text-[20px] border-[4px] border-white hover:bg-surface-variant hover:text-on-background transition-all uppercase font-black w-full sm:w-auto">
+                Create an Account
+              </Link>
             </div>
           </div>
         </section>

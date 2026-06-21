@@ -451,7 +451,7 @@ export default function InvoicesTab() {
                       </td>
                       <td className="p-4 border-r-[2px] border-black font-bold text-xs">{inv.displayDate}</td>
                       <td className="p-4 border-r-[2px] border-black bg-[#FACC15]/10 font-bold text-black text-base">
-                        {getCurrencySymbol(inv.currency)}{inv.displayAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {getCurrencySymbol(inv.currency || "USD")}{inv.displayAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
                       <td className="p-4 border-r-[2px] border-black font-bold">
                         <span className={`border-[2px] border-black px-2 py-1 text-xs font-black uppercase shadow-[1px_1px_0_0_#000000] ${getStatusColor(inv.status)}`}>

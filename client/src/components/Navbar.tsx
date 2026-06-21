@@ -108,7 +108,7 @@ export function Navbar() {
           ) : (
             <>
               <Link className="font-body-md uppercase font-bold tracking-tighter text-on-background hover:text-primary transition-colors" href="/login">Log in</Link>
-              <Link href="/signup" className="bg-primary-container text-on-primary-container px-6 py-2 font-label-caps text-label-caps border-[3px] border-on-background neo-brutal-shadow hover:neo-brutal-shadow-active hover:translate-x-[2px] hover:translate-y-[2px] transition-all inline-block">
+              <Link href="/login" className="bg-primary-container text-on-primary-container px-6 py-2 font-label-caps text-label-caps border-[3px] border-on-background neo-brutal-shadow hover:neo-brutal-shadow-active hover:translate-x-[2px] hover:translate-y-[2px] transition-all inline-block">
                 Start Free
               </Link>
             </>
@@ -150,7 +150,7 @@ export function Navbar() {
                   ) : (
                     <>
                       <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-xl uppercase font-black text-center" href="/login">Log in</Link>
-                      <Link onClick={() => setIsMenuOpen(false)} href="/signup" className="bg-primary-container text-on-background w-full py-4 font-label-caps text-lg border-[3px] border-on-background neo-brutal-shadow uppercase font-black text-center block">
+                      <Link onClick={() => setIsMenuOpen(false)} href="/login" className="bg-primary-container text-on-background w-full py-4 font-label-caps text-lg border-[3px] border-on-background neo-brutal-shadow uppercase font-black text-center block">
                         Start Free
                       </Link>
                     </>

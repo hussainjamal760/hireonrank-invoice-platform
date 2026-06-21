@@ -52,18 +52,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     const decoded = decodeToken(token);
-    if (decoded && decoded.role === 'EMPLOYEE') {
-      const employeeNavItems = [
-        { name: "My Salary Slips", href: "/admin-dashboard/salary-slips", icon: FileText }
-      ];
-      setNavItems(employeeNavItems);
-
-      if (pathname !== "/admin-dashboard/salary-slips") {
-        router.push("/admin-dashboard/salary-slips");
-        return;
+    if (!decoded || !['ADMIN', 'OWNER'].includes(decoded.role)) {
+      if (decoded && decoded.role === 'EMPLOYEE') {
+        router.push("/employee-dashboard");
+      } else if (decoded && decoded.role === 'ACCOUNTANT') {
+        router.push("/accountant-dashboard");
+      } else {
+        router.push("/login");
       }
-    } else if (decoded && decoded.role !== 'ADMIN') {
-      router.push("/accountant-dashboard");
       return;
     }
 
