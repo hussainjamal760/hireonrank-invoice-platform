@@ -1,4 +1,4 @@
-import { Employee, EmployeeProfile, Payroll, PayrollInvoice, ActivityLog } from '../models';
+import { Employee, EmployeeProfile, Payroll, PayrollInvoice, ActivityLog, Company } from '../models';
 import mongoose from 'mongoose';
 
 export class AccountingService {
