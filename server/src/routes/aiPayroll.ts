@@ -2,6 +2,7 @@ import { Router, Response, NextFunction } from 'express';
 import { authenticateToken, requireCompany, requireRole, AuthRequest } from '../middleware/auth';
 import { Employee, EmployeeProfile, Company, Payroll, PayrollInvoice, PayrollRecord, ActivityLog } from '../models';
 import { parsePayrollText } from '../services/aiPayrollService';
+import { sendPayrollEmail } from '../utils/email';
 import mongoose from 'mongoose';
 
 const router = Router();
@@ -242,6 +243,25 @@ router.post(
         status: 'PROCESSED',
         generatedBy: new mongoose.Types.ObjectId(userId)
       });
+
+      // Send notification email to employee immediately
+      try {
+        const companyDoc = await Company.findById(companyId);
+        const profileDoc = await EmployeeProfile.findOne({ employeeId });
+        const currency = profileDoc ? profileDoc.currency : 'USD';
+        const companyName = companyDoc ? companyDoc.name : 'Our Company';
+
+        await sendPayrollEmail(
+          employee.email,
+          employee.name,
+          period,
+          calculatedNet,
+          currency,
+          companyName
+        );
+      } catch (emailErr) {
+        console.error('Failed to send payroll email:', emailErr);
+      }
 
       // 7. Log Activity
       await ActivityLog.create({

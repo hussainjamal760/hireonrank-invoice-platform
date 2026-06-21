@@ -351,3 +351,164 @@ export const sendInvitationEmail = async (
     return false;
   }
 };
+
+/**
+ * Sends a styled payroll generated email to the employee.
+ * Falls back to console logging if email configuration is missing.
+ */
+export const sendPayrollEmail = async (
+  toEmail: string,
+  employeeName: string,
+  period: string,
+  netPay: number,
+  currency: string,
+  companyName: string
+): Promise<boolean> => {
+  const emailUser = process.env.EMAIL_USER;
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+  const formattedAmount = `${currency === 'PKR' ? 'Rs ' : currency === 'USD' ? '$' : currency} ${netPay.toLocaleString()}`;
+
+  if (!emailUser || !clientId || !clientSecret || !refreshToken) {
+    console.warn('[EMAIL SERVICE] Missing environment variables. Falling back to console log.');
+    console.log(`\n==========================================`);
+    console.log(`[PAYROLL EMAIL FALLBACK] Payroll generated for ${employeeName} (${toEmail})`);
+    console.log(`Company: ${companyName} | Period: ${period}`);
+    console.log(`Net Salary: ${formattedAmount}`);
+    console.log(`==========================================\n`);
+    return false;
+  }
+
+  try {
+    const oauth2Client = new OAuth2(
+      clientId,
+      clientSecret,
+      "https://developers.google.com/oauthplayground"
+    );
+
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+    const accessTokenRes = await oauth2Client.getAccessToken();
+    const accessToken = accessTokenRes.token;
+
+    if (!accessToken) {
+      throw new Error('Failed to retrieve OAuth2 access token.');
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        type: 'OAuth2',
+        user: emailUser,
+        clientId,
+        clientSecret,
+        refreshToken,
+        accessToken
+      }
+    } as any);
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Payslip Generated</title>
+        <style>
+          body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f6f3ec;
+            margin: 0;
+            padding: 40px 20px;
+            color: #1c1c18;
+          }
+          .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 4px solid #000000;
+            box-shadow: 8px 8px 0px #000000;
+            padding: 35px;
+            box-sizing: border-box;
+          }
+          .header {
+            font-size: 28px;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-style: italic;
+            letter-spacing: -1px;
+            border-bottom: 4px solid #000000;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+          }
+          .description {
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.6;
+            margin-bottom: 25px;
+          }
+          .pay-box {
+            background-color: #facc15;
+            border: 4px solid #000000;
+            box-shadow: 4px 4px 0px #000000;
+            padding: 20px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: 900;
+            margin-bottom: 25px;
+            color: #000000;
+          }
+          .footer {
+            font-size: 12px;
+            font-weight: 700;
+            color: #666666;
+            border-top: 3px solid #000000;
+            padding-top: 15px;
+            margin-top: 30px;
+            text-transform: uppercase;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">VOICY</div>
+          <div class="description">
+            Hello <strong>${employeeName}</strong>,<br><br>
+            Your payslip has been generated for the period: <strong>${period}</strong> by <strong>${companyName}</strong>.
+          </div>
+          <div class="pay-box">${formattedAmount}</div>
+          <div class="description" style="font-size: 14px;">
+            Your salary has been processed. You can download your complete PDF payslip from your employee dashboard.
+          </div>
+          <div class="footer">
+            VOICY &copy; 2026. Ai Invoice Buddy.
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const mailOptions = {
+      from: `"Voicy" <${emailUser}>`,
+      to: toEmail,
+      subject: `[VOICY] Payslip Generated - ${period}`,
+      text: `Hello ${employeeName}, your payslip has been generated for the period ${period} by ${companyName}. Net Salary: ${formattedAmount}.`,
+      html: htmlContent
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`[EMAIL SERVICE] Payroll email successfully sent to ${toEmail} for period "${period}".`);
+    return true;
+  } catch (error) {
+    console.error('[EMAIL SERVICE] Error sending payroll email:', error);
+    console.log(`\n==========================================`);
+    console.log(`[PAYROLL EMAIL FALLBACK] Payroll generated for ${employeeName} (${toEmail})`);
+    console.log(`Company: ${companyName} | Period: ${period}`);
+    console.log(`Net Salary: ${formattedAmount}`);
+    console.log(`==========================================\n`);
+    return false;
+  }
+};
