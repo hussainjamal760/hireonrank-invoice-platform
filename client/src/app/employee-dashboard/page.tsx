@@ -8,6 +8,7 @@ import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 
 export default function EmployeeDashboard() {
   const [globalData, setGlobalData] = useState<any>(null);
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number> | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("ALL");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -25,25 +26,34 @@ export default function EmployeeDashboard() {
   };
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndRates = async () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
       try {
-        const res = await fetch("/api/employee/me-global", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Failed to load profiles");
+        const [resProfile, resRates] = await Promise.all([
+          fetch("/api/employee/me-global", {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          fetch("https://api.exchangerate-api.com/v4/latest/USD").catch(() => null)
+        ]);
+
+        const data = await resProfile.json();
+        if (!resProfile.ok) throw new Error(data.message || "Failed to load profiles");
         
         setGlobalData(data);
+
+        if (resRates && resRates.ok) {
+          const rateData = await resRates.json();
+          setExchangeRates(rateData.rates);
+        }
       } catch (err: any) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-    fetchProfile();
+    fetchProfileAndRates();
   }, []);
 
   if (loading) {
@@ -67,18 +77,32 @@ export default function EmployeeDashboard() {
   const primaryCurrency = globalData?.profiles?.[0]?.currency || 'USD';
   const currencySymbol = getCurrencySymbol(primaryCurrency);
 
+  const convertCurrency = (amount: number, from: string, to: string) => {
+    if (!amount) return 0;
+    if (from === to || !exchangeRates) return amount;
+    const rateFrom = exchangeRates[from] || 1;
+    const rateTo = exchangeRates[to] || 1;
+    return (amount / rateFrom) * rateTo;
+  };
+
   let baseSalary = 0;
   let totalAllowances = 0;
   let totalTaxes = 0;
 
   filteredEmployees.forEach((employee: any) => {
-    baseSalary += employee.salary || 0;
-    
-    // Find matching profile for allowances and taxes
+    // Find matching profile for allowances, taxes, and currency
     const profile = (globalData?.profiles || []).find((p: any) => p.employeeId === employee._id);
+    const empCurrency = profile?.currency || 'USD';
+    
+    // Convert salary
+    baseSalary += convertCurrency(employee.salary || 0, empCurrency, primaryCurrency);
+    
     if (profile) {
-      totalAllowances += (profile.allowances || []).reduce((sum: number, a: any) => sum + a.amount, 0) + (profile.bonusThisMonth || 0);
-      totalTaxes += (profile.taxRules || []).reduce((sum: number, t: any) => sum + ((employee.salary || 0) * (t.rate / 100)), 0) + (profile.deductionThisMonth || 0);
+      const allowancesAmount = (profile.allowances || []).reduce((sum: number, a: any) => sum + a.amount, 0) + (profile.bonusThisMonth || 0);
+      const taxesAmount = (profile.taxRules || []).reduce((sum: number, t: any) => sum + ((employee.salary || 0) * (t.rate / 100)), 0) + (profile.deductionThisMonth || 0);
+      
+      totalAllowances += convertCurrency(allowancesAmount, empCurrency, primaryCurrency);
+      totalTaxes += convertCurrency(taxesAmount, empCurrency, primaryCurrency);
     }
   });
 
