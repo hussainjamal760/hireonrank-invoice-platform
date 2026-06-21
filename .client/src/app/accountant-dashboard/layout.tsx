@@ -9,6 +9,7 @@ import {
   Settings, Menu, X, Command,
   Zap, Sparkles
 } from "lucide-react";
+import { BrutalistLoader } from "@/components/BrutalistLoader";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/accountant-dashboard", icon: Home },
@@ -69,13 +70,7 @@ export default function AccountantLayout({ children }: { children: React.ReactNo
   };
 
   if (!authorized) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <span className="font-display-lg text-lg uppercase tracking-widest text-[#FACC15] animate-pulse">
-          Authenticating...
-        </span>
-      </div>
-    );
+    return <BrutalistLoader />;
   }
 
   return (

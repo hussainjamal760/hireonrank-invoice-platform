@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { 
   Home, FileText, Settings, Menu, X, Zap
 } from "lucide-react";
+import { BrutalistLoader } from "@/components/BrutalistLoader";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/employee-dashboard", icon: Home },
@@ -58,13 +59,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   };
 
   if (!authorized) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <span className="font-display-lg text-lg uppercase tracking-widest text-[#FACC15] animate-pulse">
-          Authenticating...
-        </span>
-      </div>
-    );
+    return <BrutalistLoader />;
   }
 
   return (
