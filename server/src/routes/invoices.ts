@@ -101,7 +101,8 @@ router.post(
         logoUrl,
         customFields,
         employeeIds,
-        clientId
+        clientId,
+        currency
       } = req.body;
 
       // --- Validation ---
@@ -153,7 +154,8 @@ router.post(
         logoUrl: logoUrl || undefined,
         customFields: customFields || [],
         employeeIds: employeeIds || [],
-        createdBy: req.user.userId
+        createdBy: req.user.userId,
+        currency: currency || 'USD'
       });
 
       // --- Activity log ---

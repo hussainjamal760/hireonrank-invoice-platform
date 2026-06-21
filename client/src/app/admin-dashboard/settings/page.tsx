@@ -4,7 +4,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Settings as SettingsIcon, Shield, Mail, CreditCard, 
-  Database, Server, Save, AlertTriangle, User, DollarSign
+  Database, Server, Save, AlertTriangle, User, DollarSign,
+  CheckCircle2, ShieldAlert
 } from "lucide-react";
 
 const InputField = ({ label, type = "text", placeholder, defaultValue, hint }: any) => (
@@ -44,6 +45,8 @@ export default function SuperAdminSettings() {
   const [activeTab, setActiveTab] = useState("general");
   const [preferredCurrency, setPreferredCurrency] = useState("USD");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
 
   import("react").then(({ useEffect }) => {
     useEffect(() => {
@@ -70,6 +73,8 @@ export default function SuperAdminSettings() {
     const token = localStorage.getItem("token");
     if (!token) return;
     setLoading(true);
+    setSuccess("");
+    setError("");
     try {
       await fetch("/api/users/profile", {
         method: "PUT",
@@ -79,9 +84,11 @@ export default function SuperAdminSettings() {
         },
         body: JSON.stringify({ preferredCurrency })
       });
-      alert("Preferences saved successfully!");
+      setSuccess("Preferences saved successfully!");
+      setTimeout(() => setSuccess(""), 4000);
     } catch (e) {
-      alert("Failed to save preferences.");
+      setError("Failed to save preferences.");
+      setTimeout(() => setError(""), 4000);
     } finally {
       setLoading(false);
     }
@@ -118,6 +125,21 @@ export default function SuperAdminSettings() {
           {loading ? "Saving..." : "Save Changes"}
         </button>
       </motion.div>
+
+      {/* Notifications */}
+      {error && (
+        <div className="bg-[#FFE5E5] text-[#D32F2F] border-[3px] border-[#D32F2F] p-4 font-bold flex items-center gap-3 shadow-[4px_4px_0_0_#D32F2F]">
+          <ShieldAlert size={24} className="shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-[#E5F6E5] text-[#008A00] border-[3px] border-[#008A00] p-4 font-bold flex items-center gap-3 shadow-[4px_4px_0_0_#008A00]">
+          <CheckCircle2 size={24} className="shrink-0" />
+          <span>{success}</span>
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Settings Sidebar Tabs */}

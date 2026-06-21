@@ -7,6 +7,7 @@ import {
   Activity, FileText, Banknote, Building2, Search, Filter,
   ArrowRight, Download
 } from "lucide-react";
+import { useCurrencyConverter } from "@/components/useCurrencyConverter";
 
 function formatDateTime(dateString: string) {
   const date = new Date(dateString);
@@ -18,6 +19,8 @@ function formatDateTime(dateString: string) {
 
 export default function ActivityLogsPage() {
   const router = useRouter();
+  const { convert, formatCurrency } = useCurrencyConverter();
+  const [preferredCurrency, setPreferredCurrency] = useState("USD");
   const [filterType, setFilterType] = useState<"ALL" | "INVOICE" | "PAYROLL">("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [logs, setLogs] = useState<any[]>([]);
@@ -25,13 +28,30 @@ export default function ActivityLogsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchLogs = async () => {
+    const fetchProfileAndLogs = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
           router.push("/login");
           return;
         }
+
+        // Fetch user profile for preferred currency
+        try {
+          const profileRes = await fetch("/api/users/profile", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (profileRes.ok) {
+            const profileData = await profileRes.json();
+            if (profileData.user?.preferredCurrency) {
+              setPreferredCurrency(profileData.user.preferredCurrency);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load profile", e);
+        }
+
+        // Fetch logs
 
         const res = await fetch("/api/admin/usage-logs", {
           headers: { "Authorization": `Bearer ${token}` }
@@ -52,7 +72,7 @@ export default function ActivityLogsPage() {
       }
     };
 
-    fetchLogs();
+    fetchProfileAndLogs();
   }, [router]);
 
   const filteredLogs = logs.filter(log => {
@@ -173,7 +193,7 @@ export default function ActivityLogsPage() {
                     </td>
                     <td className="p-4">
                       <span className="font-body-md font-black text-black bg-gray-100 px-2 py-1 rounded">
-                        {log.value}
+                        {formatCurrency(convert(log.value, "USD", preferredCurrency), preferredCurrency, true)}
                       </span>
                     </td>
                     <td className="p-4 text-black/70 font-body-md font-bold text-sm">

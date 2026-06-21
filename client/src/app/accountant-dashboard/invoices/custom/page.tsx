@@ -469,7 +469,8 @@ export default function InvoiceDesignerPage() {
           dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
           notes: branding.defaultNotes,
           logoUrl: branding.logoUrl || companyData?.logo || '',
-          customFields: []
+          customFields: [],
+          currency: currency.code
         })
       });
 

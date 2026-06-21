@@ -45,7 +45,7 @@ export function Navbar() {
     if (user.role === "ADMIN") return "/admin-dashboard";
     if (user.role === "OWNER" || user.role === "ACCOUNTANT") return "/accountant-dashboard";
     // If no company context yet, might need to create company
-    if (user.currentCompanyId === null) return "/create-company";
+    if (user.currentCompanyId === null) return "/setup-company";
     return "/accountant-dashboard"; // fallback
   };
 

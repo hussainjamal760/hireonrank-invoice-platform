@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { Company, User, Invoice, PayrollInvoice, PayrollRecord, ActivityLog, Employee, Client } from '../models';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { convertToUSD } from '../utils/currency';
 
 const router = Router();
 
@@ -28,16 +29,26 @@ router.get('/stats', authenticateToken, async (req: AuthRequest, res: Response, 
       Invoice.countDocuments({}),
       Invoice.aggregate([
         { $match: { status: 'PAID' } },
-        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        { $group: { _id: { $ifNull: ['$currency', 'USD'] }, total: { $sum: '$totalAmount' } } }
       ]),
       PayrollInvoice.aggregate([
         { $match: { status: 'paid' } },
-        { $group: { _id: null, total: { $sum: '$amount' } } }
+        { $lookup: { from: 'employeeprofiles', localField: 'employeeId', foreignField: 'employeeId', as: 'profile' } },
+        { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+        { $group: { _id: { $ifNull: ['$profile.currency', 'USD'] }, total: { $sum: '$amount' } } }
       ])
     ]);
 
-    const totalRevenue = totalRevenueAgg.length > 0 ? totalRevenueAgg[0].total : 0;
-    const totalPayroll = totalPayrollAgg.length > 0 ? totalPayrollAgg[0].total : 0;
+    const sumAgg = async (agg: any[]) => {
+      let sum = 0;
+      for (const item of agg) {
+        sum += await convertToUSD(item.total, item._id || 'USD');
+      }
+      return sum;
+    };
+
+    const totalRevenue = await sumAgg(totalRevenueAgg);
+    const totalPayroll = await sumAgg(totalPayrollAgg);
 
     return res.status(200).json({
       totalCompanies,
@@ -69,7 +80,7 @@ router.get('/charts', authenticateToken, async (req: AuthRequest, res: Response,
       // Revenue data
       Invoice.aggregate([
         { $match: { status: 'PAID', paidAt: { $gte: sixMonthsAgo } } },
-        { $group: { _id: { year: { $year: '$paidAt' }, month: { $month: '$paidAt' } }, revenue: { $sum: '$totalAmount' } } },
+        { $group: { _id: { year: { $year: '$paidAt' }, month: { $month: '$paidAt' }, currency: { $ifNull: ['$currency', 'USD'] } }, revenue: { $sum: '$totalAmount' } } },
         { $sort: { '_id.year': 1, '_id.month': 1 } }
       ]),
       // Companies growth data
@@ -99,8 +110,12 @@ router.get('/charts', authenticateToken, async (req: AuthRequest, res: Response,
       const month = date.getMonth() + 1;
       const name = MONTH_NAMES[date.getMonth()];
 
-      const r = revenueData.find(d => d._id.year === year && d._id.month === month);
-      revResult.push({ name, revenue: r ? r.revenue / 1000 : 0 }); // scaling to thousands or keeping original if small
+      let monthRevenue = 0;
+      const rEntries = revenueData.filter(d => d._id.year === year && d._id.month === month);
+      for (const entry of rEntries) {
+        monthRevenue += await convertToUSD(entry.revenue, entry._id.currency);
+      }
+      revResult.push({ name, revenue: monthRevenue / 1000 }); // scaling to thousands
 
       const g = growthData.find(d => d._id.year === year && d._id.month === month);
       totalCompaniesBefore6Months += g ? g.count : 0;
@@ -290,51 +305,79 @@ router.get('/usage-logs', authenticateToken, async (req: AuthRequest, res: Respo
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    const invoices = await Invoice.aggregate([
+    const invoicesData = await Invoice.aggregate([
       {
         $group: {
           _id: {
             companyId: '$companyId',
             year: { $year: '$createdAt' },
             month: { $month: '$createdAt' },
-            day: { $dayOfMonth: '$createdAt' }
+            day: { $dayOfMonth: '$createdAt' },
+            currency: { $ifNull: ['$currency', 'USD'] }
           },
           count: { $sum: 1 },
           totalValue: { $sum: '$totalAmount' },
           lastDate: { $max: '$createdAt' }
         }
-      },
-      { $sort: { lastDate: -1 } },
-      { $limit: 25 }
+      }
     ]);
 
-    const payrolls = await PayrollInvoice.aggregate([
+    const payrollsData = await PayrollInvoice.aggregate([
+      { $lookup: { from: 'employeeprofiles', localField: 'employeeId', foreignField: 'employeeId', as: 'profile' } },
+      { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
       {
         $group: {
           _id: {
             companyId: '$companyId',
             year: { $year: '$createdAt' },
             month: { $month: '$createdAt' },
-            day: { $dayOfMonth: '$createdAt' }
+            day: { $dayOfMonth: '$createdAt' },
+            currency: { $ifNull: ['$profile.currency', 'USD'] }
           },
           count: { $sum: 1 },
           totalValue: { $sum: '$amount' },
           lastDate: { $max: '$createdAt' }
         }
-      },
-      { $sort: { lastDate: -1 } },
-      { $limit: 25 }
+      }
     ]);
+
+    const aggregateByDayAndCompany = async (data: any[]) => {
+      const map = new Map<string, any>();
+      for (const item of data) {
+        const key = `${item._id.companyId}-${item._id.year}-${item._id.month}-${item._id.day}`;
+        const usdVal = await convertToUSD(item.totalValue, item._id.currency);
+        
+        if (!map.has(key)) {
+          map.set(key, {
+            companyId: item._id.companyId,
+            count: item.count,
+            totalValue: usdVal,
+            lastDate: item.lastDate
+          });
+        } else {
+          const existing = map.get(key);
+          existing.count += item.count;
+          existing.totalValue += usdVal;
+          if (new Date(item.lastDate) > new Date(existing.lastDate)) {
+            existing.lastDate = item.lastDate;
+          }
+        }
+      }
+      return Array.from(map.values()).sort((a, b) => new Date(b.lastDate).getTime() - new Date(a.lastDate).getTime()).slice(0, 25);
+    };
+
+    const invoices = await aggregateByDayAndCompany(invoicesData);
+    const payrolls = await aggregateByDayAndCompany(payrollsData);
 
     const populateCompany = async (aggData: any[], type: string) => {
       return Promise.all(aggData.map(async (item) => {
-        const company = await Company.findById(item._id.companyId).select('name');
+        const company = await Company.findById(item.companyId).select('name');
         return {
-          _id: item._id.companyId.toString() + item.lastDate.getTime() + type,
+          _id: item.companyId.toString() + item.lastDate.getTime() + type,
           type: type,
           company: company ? company.name : 'Unknown',
           count: item.count,
-          value: `$${item.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          value: item.totalValue,
           date: item.lastDate,
           status: 'Generated'
         };
