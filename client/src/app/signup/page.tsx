@@ -63,7 +63,7 @@ export default function Signup() {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get("invite_token");
       if (token) {
-        router.push(`/employee-details?invite_token=${token}`);
+        router.push(`/join?token=${token}`);
         return;
       }
       router.push('/accountant-dashboard');
@@ -134,7 +134,7 @@ export default function Signup() {
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
       if (inviteToken) {
-        router.push(`/employee-details?invite_token=${inviteToken}`);
+        router.push(`/join?token=${inviteToken}`);
       } else {
         router.push("/setup-company");
       }
@@ -190,7 +190,7 @@ export default function Signup() {
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
       if (inviteToken) {
-        router.push(`/employee-details?invite_token=${inviteToken}`);
+        router.push(`/join?token=${inviteToken}`);
       } else {
         router.push("/setup-company");
       }

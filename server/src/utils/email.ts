@@ -185,7 +185,7 @@ export const sendInvitationEmail = async (
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
-  const joinLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?invite_token=${inviteToken}`;
+  const joinLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/join?token=${inviteToken}`;
 
   if (!emailUser || !clientId || !clientSecret || !refreshToken) {
     console.warn('[EMAIL SERVICE] Missing environment variables. Falling back to console log.');

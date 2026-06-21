@@ -61,7 +61,7 @@ export default function Login() {
         const urlParams = new URLSearchParams(window.location.search);
         const urlInviteToken = urlParams.get("invite_token");
         if (urlInviteToken) {
-          router.push(`/employee-details?invite_token=${urlInviteToken}`);
+          router.push(`/join?token=${urlInviteToken}`);
           return;
         }
 
@@ -160,7 +160,7 @@ export default function Login() {
       }
 
       if (inviteToken) {
-        router.push(`/employee-details?invite_token=${inviteToken}`);
+        router.push(`/join?token=${inviteToken}`);
       } else if (data.state === "NO_COMPANY_STATE") {
         router.push("/create-company");
       } else {
@@ -196,7 +196,7 @@ export default function Login() {
       localStorage.setItem("token", data.token);
 
       if (inviteToken) {
-        router.push(`/employee-details?invite_token=${inviteToken}`);
+        router.push(`/join?token=${inviteToken}`);
       } else {
         if (data.role === 'EMPLOYEE') {
           router.push("/employee-dashboard");
@@ -273,7 +273,7 @@ export default function Login() {
       if (data.state === "ADMIN_BYPASS") {
         router.push("/admin-dashboard");
       } else if (inviteToken) {
-        router.push(`/employee-details?invite_token=${inviteToken}`);
+        router.push(`/join?token=${inviteToken}`);
       } else if (data.state === "NO_COMPANY_STATE") {
         router.push("/create-company");
       } else {

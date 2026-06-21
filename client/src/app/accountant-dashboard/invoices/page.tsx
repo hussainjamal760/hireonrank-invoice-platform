@@ -8,7 +8,7 @@ import {
   FileText, Calendar, ShieldAlert, CheckCircle2,
   ListFilter, Play, ArrowUpRight, DollarSign, Check,
   Plus, Download, Search, MoreVertical, Eye, Send,
-  Clock, X, Copy, Mail, QrCode
+  Clock, X, Copy, Mail, QrCode, Loader2
 } from "lucide-react";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { exportTableToCSV, exportTableToPDF } from "@/utils/tableExport";
@@ -49,6 +49,7 @@ export default function InvoicesTab() {
   const [showDeliveryModal, setShowDeliveryModal] = useState<Invoice | null>(null);
   const [deliveryEmail, setDeliveryEmail] = useState("");
   const [modalError, setModalError] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     if (showDeliveryModal) {
@@ -57,6 +58,7 @@ export default function InvoicesTab() {
     } else {
       setDeliveryEmail("");
       setModalError("");
+      setSendingEmail(false);
     }
   }, [showDeliveryModal]);
 
@@ -542,12 +544,14 @@ export default function InvoicesTab() {
 
                 <div className="flex flex-col gap-3">
                   <button
+                    disabled={sendingEmail}
                     onClick={async () => {
                       if (!deliveryEmail.trim()) {
                         setModalError("Client email is required to send the invoice");
                         return;
                       }
                       setModalError("");
+                      setSendingEmail(true);
                       try {
                         const token = localStorage.getItem('token');
                         const res = await fetch(`/api/invoices/${showDeliveryModal._id}/send`, {
@@ -566,11 +570,25 @@ export default function InvoicesTab() {
                         fetchInvoices();
                       } catch (err: any) {
                         setModalError(err.message || 'Error sending email');
+                      } finally {
+                        setSendingEmail(false);
                       }
                     }}
-                    className="w-full bg-[#FACC15] text-black hover:bg-black hover:text-[#FACC15] border-[3px] border-black p-4 font-black uppercase text-sm shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2"
+                    className={`w-full border-[3px] border-black p-4 font-black uppercase text-sm transition-all flex items-center justify-center gap-2 ${
+                      sendingEmail 
+                        ? "bg-gray-300 text-black/50 cursor-not-allowed translate-x-[4px] translate-y-[4px] shadow-none" 
+                        : "bg-[#FACC15] text-black hover:bg-black hover:text-[#FACC15] shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
+                    }`}
                   >
-                    <Mail size={18} /> Send via Email
+                    {sendingEmail ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} /> Sending Email...
+                      </>
+                    ) : (
+                      <>
+                        <Mail size={18} /> Send via Email
+                      </>
+                    )}
                   </button>
 
                   {showDeliveryModal.publicLinkToken && (
