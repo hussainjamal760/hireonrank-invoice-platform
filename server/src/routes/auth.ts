@@ -80,6 +80,29 @@ export const handlePostLoginRouting = async (user: any) => {
   }
 
   // Multiple companies
+  // If the user is ONLY an EMPLOYEE across all active memberships, skip selection
+  const isOnlyEmployee = activeMemberships.every((m: any) => m.role === 'EMPLOYEE');
+  if (isOnlyEmployee) {
+    const token = generateToken(user._id.toString(), user.email, 'GLOBAL', 'EMPLOYEE');
+    return {
+      state: 'ONE_COMPANY_STATE', // Bypasses multiple company selection in frontend
+      token,
+      currentCompanyId: 'GLOBAL',
+      role: 'EMPLOYEE',
+      company: {
+        id: 'GLOBAL',
+        name: 'Multiple Companies',
+        logo: null
+      },
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        profilePicture: user.profilePicture
+      }
+    };
+  }
+
   const token = generateToken(user._id.toString(), user.email, null, null);
   return {
     state: 'MULTIPLE_COMPANIES_STATE',

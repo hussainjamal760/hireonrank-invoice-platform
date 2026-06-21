@@ -488,7 +488,8 @@ router.get(
         const newInvoices = await PayrollInvoice.find({ companyId: id }).lean();
         
         const mappedNewRecords = newPayrolls.map((p: any) => {
-          const inv = newInvoices.find((i: any) => i.employeeId.toString() === p.employeeId._id.toString() && i.month === p.month);
+          const empIdStr = (p.employeeId?._id || p.employeeId)?.toString() || '';
+          const inv = newInvoices.find((i: any) => i.employeeId.toString() === empIdStr && i.month === p.month);
           return {
             _id: inv ? inv._id : p._id, // Use invoice ID so download and status endpoints work seamlessly
             employeeId: p.employeeId,
@@ -503,7 +504,25 @@ router.get(
           };
         });
 
-        const records = [...mappedNewRecords, ...mappedOldRecords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const normalizeMonth = (m: string) => {
+          const parts = m.trim().split(/\s+/);
+          if (parts.length === 2) {
+            const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+            const idx = months.indexOf(parts[0].toLowerCase());
+            if (idx !== -1) return `${parts[1]}-${String(idx + 1).padStart(2, '0')}`;
+          }
+          return m;
+        };
+
+        const filteredOldRecords = mappedOldRecords.filter((oldR: any) => {
+          const oldEmpId = (oldR.employeeId?._id || oldR.employeeId)?.toString() || '';
+          return !mappedNewRecords.some((newR: any) => {
+            const newEmpId = (newR.employeeId?._id || newR.employeeId)?.toString() || '';
+            return newEmpId === oldEmpId && newR.month === normalizeMonth(oldR.month);
+          });
+        });
+
+        const records = [...mappedNewRecords, ...filteredOldRecords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         return res.status(200).json({ success: true, records });
       }

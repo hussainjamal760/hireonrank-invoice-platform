@@ -77,6 +77,16 @@ const EXAMPLE_PROMPTS = [
   }
 ];
 
+const CURRENCIES = [
+  { code: 'USD', symbol: '$' },
+  { code: 'EUR', symbol: '€' },
+  { code: 'GBP', symbol: '£' },
+  { code: 'INR', symbol: '₹' },
+  { code: 'PKR', symbol: 'Rs ' },
+  { code: 'AUD', symbol: 'A$' },
+  { code: 'CAD', symbol: 'C$' }
+];
+
 export default function PayrollTab() {
   const [activeTab, setActiveTab] = useState<"ledger" | "ai-generator">("ledger");
 
@@ -97,6 +107,7 @@ export default function PayrollTab() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [promptText, setPromptText] = useState("");
+  const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [aiLoading, setAiLoading] = useState(false);
 
   // Preview Modal States
@@ -1028,29 +1039,23 @@ export default function PayrollTab() {
                 <div className="border-[3px] border-black p-4 bg-[#fbfbfa] space-y-2.5 font-mono text-sm shadow-[3px_3px_0_0_#000000]">
                   <div className="flex justify-between text-black/70">
                     <span className="font-bold uppercase text-xs">Base Salary:</span>
-                    <span>{getCurrencySymbol("USD")}{generatedPayroll.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span>{getCurrencySymbol(currency.code)}{generatedPayroll.baseSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between text-black/70">
                     <span className="font-bold uppercase text-xs">Allowances & Bonuses:</span>
                     <span className="text-emerald-600 font-bold">
-                      +{getCurrencySymbol("USD")}{(generatedPayroll.allowances.reduce((s, a) => s + a.amount, 0) + generatedPayroll.bonus).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-black/70">
-                    <span className="font-bold uppercase text-xs">Gross Salary:</span>
-                    <span className="font-black">
-                      {getCurrencySymbol("USD")}{generatedPayroll.grossSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      +{getCurrencySymbol(currency.code)}{(generatedPayroll.allowances.reduce((s, a) => s + a.amount, 0) + generatedPayroll.bonus).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between text-black/70 border-t border-black/20 pt-2">
                     <span className="font-bold uppercase text-xs">Total Deductions:</span>
                     <span className="text-red-600 font-bold">
-                      -{getCurrencySymbol("USD")}{generatedPayroll.totalDeductions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      -{getCurrencySymbol(currency.code)}{generatedPayroll.totalDeductions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex justify-between text-base border-[2px] border-black p-2.5 mt-2 bg-[#FACC15] text-black font-black uppercase">
                     <span>Net take home:</span>
-                    <span>{getCurrencySymbol("USD")}{generatedPayroll.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span>{getCurrencySymbol(currency.code)}{generatedPayroll.netSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>
