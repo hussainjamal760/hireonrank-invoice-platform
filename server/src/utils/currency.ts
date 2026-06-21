@@ -28,7 +28,7 @@ export const convertToUSD = async (amount: number, fromCurrency: string = 'USD')
   
   const rates = await getRates();
   const rate = rates[fromCurrency];
-  if (!rate) return amount; // fallback if currency not found
+  if (!rate) return amount; 
 
   return amount / rate;
 };
