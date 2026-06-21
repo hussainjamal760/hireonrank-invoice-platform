@@ -42,14 +42,29 @@ export default function Login() {
     const token = urlParams.get("invite_token");
     if (token) {
       setInviteToken(token);
+      fetch(`/api/companies/invite-info/${token}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && !data.userExists) {
+            router.push(`/signup?invite_token=${token}&reason=account_required`);
+          }
+        })
+        .catch(err => console.error("Error fetching invite info:", err));
     }
-  }, []);
+  }, [router]);
 
   // Google OAuth Initialization (Safe Single-Init Guard)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       if (token) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlInviteToken = urlParams.get("invite_token");
+        if (urlInviteToken) {
+          router.push(`/employee-details?invite_token=${urlInviteToken}`);
+          return;
+        }
+
         try {
           const payload = token.split('.')[1];
           const decoded = JSON.parse(atob(payload));
@@ -79,7 +94,7 @@ export default function Login() {
         if ((window as any).google && !(window as any).googleAuthInitialized) {
           try {
             (window as any).google.accounts.id.initialize({
-              client_id: "your-google-client-id",
+              client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "your-google-client-id",
               callback: handleGoogleLoginResponse,
             });
             (window as any).googleAuthInitialized = true;

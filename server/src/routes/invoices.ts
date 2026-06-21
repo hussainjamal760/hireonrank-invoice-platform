@@ -499,9 +499,14 @@ router.post(
       if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
       if (!company) return res.status(404).json({ message: 'Company not found' });
 
-      // Ensure clientEmail exists
-      if (!invoice.clientEmail) {
+      const { email } = req.body;
+      const targetEmail = (email || invoice.clientEmail || '').trim().toLowerCase();
+      if (!targetEmail) {
         return res.status(400).json({ message: 'Client email is required to send the invoice' });
+      }
+
+      if (targetEmail !== invoice.clientEmail) {
+        invoice.clientEmail = targetEmail;
       }
 
       // Generate the PDF buffer

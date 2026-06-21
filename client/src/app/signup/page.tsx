@@ -37,17 +37,35 @@ export default function Signup() {
   }, []);
 
   const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteInfo, setInviteInfo] = useState<any>(null);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("invite_token");
     if (token) {
       setInviteToken(token);
+      fetch(`/api/companies/invite-info/${token}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setInviteInfo(data);
+            if (data.email) {
+              setEmail(data.email);
+            }
+          }
+        })
+        .catch(err => console.error("Error fetching invite info:", err));
     }
   }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('token')) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get("invite_token");
+      if (token) {
+        router.push(`/employee-details?invite_token=${token}`);
+        return;
+      }
       router.push('/accountant-dashboard');
       return;
     }
@@ -63,7 +81,7 @@ export default function Signup() {
         if ((window as any).google && !(window as any).googleAuthInitialized) {
           try {
             (window as any).google.accounts.id.initialize({
-              client_id: "your-google-client-id",
+              client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "your-google-client-id",
               callback: handleGoogleLoginResponse,
             });
             (window as any).googleAuthInitialized = true;
@@ -116,7 +134,7 @@ export default function Signup() {
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
       if (inviteToken) {
-        router.push(`/create-company?invite_token=${inviteToken}`);
+        router.push(`/employee-details?invite_token=${inviteToken}`);
       } else {
         router.push("/setup-company");
       }
@@ -172,7 +190,7 @@ export default function Signup() {
       const data = await handleApiResponse(res);
       localStorage.setItem("token", data.token);
       if (inviteToken) {
-        router.push(`/create-company?invite_token=${inviteToken}`);
+        router.push(`/employee-details?invite_token=${inviteToken}`);
       } else {
         router.push("/setup-company");
       }
@@ -204,6 +222,13 @@ export default function Signup() {
               <Zap size={24} className="text-on-background" />
             </Link>
           </motion.div>
+
+          {inviteInfo && (
+            <div className="bg-[#FEF08A] text-[#854D0E] border-[3px] border-[#854D0E] p-4 font-bold flex items-center gap-3">
+              <ShieldAlert size={20} className="flex-shrink-0" />
+              <span>An account is required to accept the invitation to join <strong>{inviteInfo.company?.name || "the company"}</strong>. Please sign up to proceed.</span>
+            </div>
+          )}
 
           {error && (
             <div className="bg-[#FFE5E5] text-[#D32F2F] border-[3px] border-[#D32F2F] p-4 font-bold flex items-center gap-3">
@@ -257,7 +282,8 @@ export default function Signup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-white border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all" 
+                readOnly={!!inviteToken}
+                className={`w-full bg-white border-[3px] border-on-background px-4 py-3 font-body-md focus:ring-0 focus:outline-none focus:bg-primary-container focus:translate-x-[2px] focus:translate-y-[2px] transition-all ${inviteToken ? "bg-gray-100 cursor-not-allowed opacity-80" : ""}`}
               />
             </div>
 

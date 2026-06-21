@@ -303,7 +303,7 @@ router.post(
   }
 );
 
-router.get('/invite-info/:token', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+router.get('/invite-info/:token', async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const { token } = req.params;
     if (!token) {
@@ -320,8 +320,12 @@ router.get('/invite-info/:token', authenticateToken, async (req: AuthRequest, re
       return res.status(404).json({ message: 'Company not found' });
     }
 
+    const userExists = await User.exists({ email: invitation.email.toLowerCase() });
+
     return res.status(200).json({
       success: true,
+      email: invitation.email,
+      userExists: !!userExists,
       company: {
         name: company.name,
         logo: company.logo,
@@ -424,17 +428,18 @@ router.post('/join', authenticateToken, async (req: AuthRequest, res: Response, 
         userId: req.user.userId,
         name: userDoc?.name || req.user.email.split('@')[0],
         email: req.user.email,
+        phone: userDoc?.phoneNumber || undefined,
         salary: 0,
-        designation: invitation.role,
+        designation: userDoc?.occupation || invitation.role,
         department: department || undefined,
         status: 'ACTIVE'
       });
-    } else if (!employeeRecord.userId) {
+    } else {
       employeeRecord.userId = req.user.userId as any;
+      employeeRecord.name = userDoc?.name || employeeRecord.name;
+      if (userDoc?.phoneNumber) employeeRecord.phone = userDoc.phoneNumber;
       if (department) employeeRecord.department = department;
-      await employeeRecord.save();
-    } else if (department && !employeeRecord.department) {
-      employeeRecord.department = department;
+      if (userDoc?.occupation) employeeRecord.designation = userDoc.occupation;
       await employeeRecord.save();
     }
 
