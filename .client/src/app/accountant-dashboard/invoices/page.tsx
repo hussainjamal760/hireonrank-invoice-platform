@@ -10,6 +10,7 @@ import {
   Plus, Download, Search, MoreVertical, Eye, Send,
   Clock, X, Copy, Mail
 } from "lucide-react";
+import { TableSkeleton } from "@/components/TableSkeleton";
 
 interface Invoice {
   _id: string;
@@ -268,9 +269,6 @@ export default function InvoicesTab() {
             <h2 className="font-display-md text-xl uppercase font-black mb-4 border-b-[2px] border-black pb-2 flex items-center gap-2">
               <Play size={20} /> Quick Action
             </h2>
-            <p className="font-bold text-sm text-black/70 mb-4">
-              Need to bill a client? Use our advanced drag-and-drop designer to create a fully customized invoice instantly.
-            </p>
           </div>
           <button
             onClick={() => router.push('/accountant-dashboard/invoices/custom')}
@@ -336,11 +334,7 @@ export default function InvoicesTab() {
         </h2>
 
         {loading ? (
-          <div className="py-12 text-center">
-            <span className="font-label-caps text-lg uppercase tracking-widest text-[#735c00] animate-pulse">
-              Consulting Invoice Ledgers...
-            </span>
-          </div>
+          <TableSkeleton columns={7} rows={5} />
         ) : filteredInvoices.length === 0 ? (
           <div className="py-12 text-center text-black/60 font-mono font-bold">
             No generated invoices found for this selection.

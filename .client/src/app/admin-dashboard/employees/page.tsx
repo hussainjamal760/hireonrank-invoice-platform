@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Users, Search, Loader2, Building2, Briefcase, Mail } from "lucide-react";
+import { TableSkeleton } from "@/components/TableSkeleton";
 
 interface Employee {
   _id: string;
@@ -68,16 +69,7 @@ export default function AdminEmployeesPage() {
     };
   }).filter(companyData => companyData.employees.length > 0 || companyData.company.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  if (loading) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="w-12 h-12 text-black animate-spin" strokeWidth={3} />
-        <span className="font-label-caps text-lg uppercase tracking-widest text-black animate-pulse">
-          Loading Global Workforce...
-        </span>
-      </div>
-    );
-  }
+
 
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12">
@@ -110,7 +102,15 @@ export default function AdminEmployeesPage() {
 
       {/* Companies & Employees */}
       <div className="flex flex-col gap-10">
-        {filteredData.length === 0 ? (
+        {loading ? (
+          <div className="bg-white border-[3px] border-black shadow-[6px_6px_0_0_#000000] overflow-hidden flex flex-col animate-pulse">
+            <div className="bg-[#f6f3ec] border-b-[3px] border-black p-4 flex items-center gap-4">
+              <div className="w-10 h-10 border-[2px] border-black bg-black/10"></div>
+              <div className="w-48 h-6 bg-black/10"></div>
+            </div>
+            <TableSkeleton columns={5} rows={3} />
+          </div>
+        ) : filteredData.length === 0 ? (
           <div className="bg-white border-[3px] border-black p-12 text-center shadow-[6px_6px_0_0_#000000]">
             <span className="font-label-caps text-lg uppercase tracking-widest text-black/60">
               No employees found matching your search.

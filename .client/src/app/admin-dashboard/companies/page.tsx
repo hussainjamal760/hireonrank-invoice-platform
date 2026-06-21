@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Building2, Search, Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { TableSkeleton } from "@/components/TableSkeleton";
 
 export default function CompaniesPage() {
   const router = useRouter();
@@ -91,16 +92,7 @@ export default function CompaniesPage() {
     c.ownerEmail.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="w-12 h-12 text-black animate-spin" strokeWidth={3} />
-        <span className="font-label-caps text-lg uppercase tracking-widest text-black animate-pulse">
-          Loading Registry...
-        </span>
-      </div>
-    );
-  }
+
 
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12">
@@ -139,24 +131,27 @@ export default function CompaniesPage() {
         className="bg-white border-[3px] border-black shadow-[6px_6px_0_0_#000000] overflow-hidden"
       >
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#FACC15] border-b-[3px] border-black text-black font-label-caps uppercase text-sm tracking-widest font-black">
-                <th className="p-4 border-r-[3px] border-black">Company Name</th>
-                <th className="p-4 border-r-[3px] border-black">Owner</th>
-                <th className="p-4 border-r-[3px] border-black text-center">Employees</th>
-                <th className="p-4 border-r-[3px] border-black text-center">Clients</th>
-                <th className="p-4 border-r-[3px] border-black text-center">Status</th>
-                <th className="p-4 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="font-mono text-sm font-bold text-black">
-              {filteredCompanies.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-black/60 uppercase tracking-widest">
-                    No companies found matching your search.
-                  </td>
+          {loading ? (
+            <TableSkeleton columns={6} rows={5} />
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#FACC15] border-b-[3px] border-black text-black font-label-caps uppercase text-sm tracking-widest font-black">
+                  <th className="p-4 border-r-[3px] border-black">Company Name</th>
+                  <th className="p-4 border-r-[3px] border-black">Owner</th>
+                  <th className="p-4 border-r-[3px] border-black text-center">Employees</th>
+                  <th className="p-4 border-r-[3px] border-black text-center">Clients</th>
+                  <th className="p-4 border-r-[3px] border-black text-center">Status</th>
+                  <th className="p-4 text-center">Action</th>
                 </tr>
+              </thead>
+              <tbody className="font-mono text-sm font-bold text-black">
+                {filteredCompanies.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-black/60 uppercase tracking-widest">
+                      No companies found matching your search.
+                    </td>
+                  </tr>
               ) : (
                 filteredCompanies.map((company, idx) => (
                   <tr key={company._id} className={`border-b-[3px] border-black hover:bg-black/5 transition-colors ${idx === filteredCompanies.length - 1 ? 'border-b-0' : ''}`}>
@@ -195,6 +190,7 @@ export default function CompaniesPage() {
               )}
             </tbody>
           </table>
+          )}
         </div>
       </motion.div>
 

@@ -8,6 +8,7 @@ import {
   Trash2, X, DollarSign, Plus, Settings, CreditCard,
   Briefcase, Percent, ShieldQuestion, UserCheck
 } from "lucide-react";
+import { TableSkeleton } from "@/components/TableSkeleton";
 
 interface Employee {
   _id: string;
@@ -274,11 +275,7 @@ export default function EmployeesTab() {
       {/* Table */}
       <div className="bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000]">
         {loading ? (
-          <div className="py-12 text-center">
-            <span className="font-label-caps text-lg uppercase tracking-widest text-[#735c00] animate-pulse">
-              Consulting Employee Roll...
-            </span>
-          </div>
+          <TableSkeleton columns={6} rows={5} />
         ) : employees.length === 0 ? (
           <div className="py-12 text-center text-black/60 font-mono font-bold">
             No employees registered in this company yet. Click 'Add Employee' to configure.

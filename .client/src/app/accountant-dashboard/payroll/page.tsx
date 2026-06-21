@@ -7,6 +7,7 @@ import {
   ListFilter, Play, ArrowUpRight, Award, Scissors, FileSpreadsheet,
   Download, Check
 } from "lucide-react";
+import { TableSkeleton } from "@/components/TableSkeleton";
 
 interface PayrollRecord {
   _id: string;
@@ -230,9 +231,7 @@ export default function PayrollTab() {
             <h2 className="font-display-md text-2xl uppercase font-black mb-4 border-b-[2px] border-black pb-2 flex items-center gap-2">
               <Play size={20} /> Execute Run
             </h2>
-            <p className="text-xs font-bold text-black/60 mb-6">
-              Calculates allowances, tax deductions, net salaries, and auto-generates invoice ledgers in bulk.
-            </p>
+           
           </div>
 
           <form onSubmit={handleGenerateRun} className="flex flex-col gap-4">
@@ -293,11 +292,7 @@ export default function PayrollTab() {
         </h2>
 
         {loading ? (
-          <div className="py-12 text-center">
-            <span className="font-label-caps text-lg uppercase tracking-widest text-[#735c00] animate-pulse">
-              Consulting Ledger Database...
-            </span>
-          </div>
+          <TableSkeleton columns={8} rows={5} />
         ) : filteredRecords.length === 0 ? (
           <div className="py-12 text-center text-black/60 font-mono font-bold">
             No payroll records found for this selection.
