@@ -248,71 +248,7 @@ router.post('/verify-otp', async (req: Request, res: Response, next: NextFunctio
   }
 });
 
-/**
- * POST /auth/google-login
- * Request: { idToken }
- */
-router.post('/google-login', async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-  try {
-    const { idToken } = req.body;
 
-    if (!idToken) {
-      return res.status(400).json({ message: 'ID Token is required' });
-    }
-
-    // Verify Google Token via googleapis endpoint
-    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
-    if (!response.ok) {
-      return res.status(400).json({ message: 'Invalid Google token' });
-    }
-
-    const payload = await response.json() as {
-      email: string;
-      name?: string;
-      sub: string;
-      picture?: string;
-      email_verified?: string;
-    };
-
-    if (!payload.email) {
-      return res.status(400).json({ message: 'Email not provided by Google' });
-    }
-
-    const cleanEmail = payload.email.trim().toLowerCase();
-
-    // Fetch or create User
-    let user = await User.findOne({ email: cleanEmail });
-    if (!user) {
-      user = await User.create({
-        email: cleanEmail,
-        name: payload.name || cleanEmail.split('@')[0],
-        googleId: payload.sub,
-        profilePicture: payload.picture,
-        createdAt: new Date()
-      });
-    } else {
-      // Update google profile details if not set
-      let updated = false;
-      if (!user.googleId) {
-        user.googleId = payload.sub;
-        updated = true;
-      }
-      if (!user.profilePicture && payload.picture) {
-        user.profilePicture = payload.picture;
-        updated = true;
-      }
-      if (updated) {
-        await user.save();
-      }
-    }
-
-    // Compute SaaS tenant logic
-    const postLoginState = await handlePostLoginRouting(user);
-    return res.status(200).json(postLoginState);
-  } catch (err) {
-    next(err);
-  }
-});
 
 /**
  * GET /auth/me
