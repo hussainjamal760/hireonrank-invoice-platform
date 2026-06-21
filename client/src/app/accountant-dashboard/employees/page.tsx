@@ -72,7 +72,7 @@ export default function EmployeesTab() {
     return matchesSearch && matchesDepartment;
   });
 
-  // Modals & Selected Profile State
+  // Modals & Selected Profile 
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employeeProfile, setEmployeeProfile] = useState<EmployeeProfile | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
