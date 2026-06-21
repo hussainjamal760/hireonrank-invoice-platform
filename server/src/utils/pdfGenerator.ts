@@ -1,85 +1,135 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+const drawVoicyLogo = (doc: jsPDF, x: number, y: number, isDarkBackground = false) => {
+  // A sleek black box with a yellow "V" triangle/lightning shape
+  doc.setFillColor(isDarkBackground ? 255 : 15, isDarkBackground ? 255 : 23, isDarkBackground ? 255 : 42);
+  doc.rect(x, y, 14, 14, 'F');
+  
+  // The V Shape (Yellow)
+  doc.setFillColor(250, 204, 21); // #FACC15
+  doc.triangle(x + 3, y + 3, x + 11, y + 3, x + 7, y + 11, 'F');
+  
+  // Voicy Wordmark
+  doc.setTextColor(isDarkBackground ? 255 : 15, isDarkBackground ? 255 : 23, isDarkBackground ? 255 : 42);
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bolditalic');
+  doc.text('VOICY', x + 18, y + 11);
+};
+
 export const generateSalarySlipPDF = async (record: any, company: any) => {
   const doc = new jsPDF();
 
-  // Header
-  doc.setFillColor(250, 204, 21); // #FACC15
-  doc.rect(0, 0, 210, 40, 'F');
+  // Premium Neo-Brutalism Header for Salary Slip
+  // Deep Slate / Navy Header Block
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, 210, 50, 'F');
   
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(22);
+  // Yellow Accent Bar
+  doc.setFillColor(250, 204, 21);
+  doc.rect(0, 50, 210, 4, 'F');
+
+  // Voicy Logo in Header (Dark background version)
+  drawVoicyLogo(doc, 15, 15, true);
+
+  // Document Title
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
-  doc.text(company.name.toUpperCase(), 15, 25);
+  doc.text('SALARY SLIP', 195, 28, { align: 'right' });
   
+  doc.setFillColor(250, 204, 21);
+  doc.rect(145, 34, 50, 6, 'F');
+  doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text(record.period?.toUpperCase() || 'CURRENT PERIOD', 170, 38.5, { align: 'center' });
+
+  // Employer Info
+  let currentY = 70;
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text((company?.name || 'Company').toUpperCase(), 15, currentY);
+  
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('OFFICIAL SALARY SLIP', 15, 32);
+  doc.setTextColor(100, 116, 139);
+  if (company?.address) doc.text(company.address, 15, currentY + 6);
+  if (company?.country) doc.text(company.country, 15, currentY + 11);
 
-  doc.setFontSize(16);
-  doc.text('PAYSLIP', 160, 25);
+  // Employee Info (Right Side)
   doc.setFontSize(10);
-  doc.text(record.period.toUpperCase(), 160, 32);
-
-  // Employee details
-  doc.setFontSize(10);
-  doc.setTextColor(100, 100, 100);
-  doc.text('EMPLOYEE NAME', 15, 55);
-  doc.text('EMAIL ADDRESS', 110, 55);
-  
-  doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'bold');
-  doc.text(record.employeeName.toUpperCase(), 15, 62);
-  doc.text(record.employeeEmail, 110, 62);
+  doc.setTextColor(15, 23, 42);
+  doc.text('EMPLOYEE DETAILS', 120, currentY);
+  
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
+  doc.text('Name:', 120, currentY + 7);
+  doc.text('Email:', 120, currentY + 13);
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(record.employeeName?.toUpperCase() || '', 140, currentY + 7);
+  doc.text(record.employeeEmail || '', 140, currentY + 13);
 
-  // Table
-  const tableData = [
-    ['EARNINGS', 'AMOUNT'],
-    ['Base Salary', `Rs ${record.baseSalary.toLocaleString()}`],
-    ['Bonuses / Allowances', `Rs ${record.bonuses.toLocaleString()}`],
-    ['', ''],
-    ['DEDUCTIONS', 'AMOUNT'],
-    ['Adjustments', `Rs ${record.deductions.toLocaleString()}`],
-    ['', ''],
-    ['TOTAL NET PAY', `Rs ${record.netPay.toLocaleString()}`]
-  ];
-
+  // Earnings & Deductions Tables (Side by Side illusion using autoTable)
+  currentY += 30;
+  
+  // We use autoTable to structure Earnings and Deductions neatly
   autoTable(doc, {
-    startY: 75,
-    head: [['Description', 'Amount']],
+    startY: currentY,
+    head: [['Description', 'Earnings', 'Deductions']],
     body: [
-      ['Base Salary', `Rs ${record.baseSalary.toLocaleString()}`],
-      ['Bonuses & Allowances', `Rs ${record.bonuses.toLocaleString()}`],
-      ['Deductions', `- Rs ${record.deductions.toLocaleString()}`],
+      ['Base Salary', `Rs ${record.baseSalary?.toLocaleString()}`, ''],
+      ['Bonuses & Allowances', `Rs ${record.bonuses?.toLocaleString()}`, ''],
+      ['Adjustments / Taxes', '', `Rs ${record.deductions?.toLocaleString()}`],
     ],
     theme: 'grid',
-    headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] },
-    styles: { font: 'helvetica', fontSize: 10 },
+    headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+    bodyStyles: { textColor: [15, 23, 42] },
+    styles: { font: 'helvetica', fontSize: 10, cellPadding: 6 },
     columnStyles: {
-      1: { halign: 'right', fontStyle: 'bold' }
+      0: { fontStyle: 'bold' },
+      1: { halign: 'right', textColor: [0, 138, 0] }, // Green for earnings
+      2: { halign: 'right', textColor: [211, 47, 47] } // Red for deductions
     }
   });
 
-  // Summary Box
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
-  doc.setFillColor(243, 244, 246);
-  doc.rect(120, finalY, 75, 25, 'F');
-  doc.setDrawColor(0, 0, 0);
-  doc.rect(120, finalY, 75, 25, 'S');
+  const finalY = (doc as any).lastAutoTable.finalY + 15;
 
-  doc.setFontSize(9);
-  doc.text('NET TAKE HOME', 125, finalY + 10);
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`Rs ${record.netPay.toLocaleString()}`, 125, finalY + 20);
+  // Premium Net Pay Box
+  doc.setFillColor(248, 250, 252); // Light slate bg
+  doc.rect(110, finalY, 85, 30, 'F');
+  
+  // Left Yellow Accent
+  doc.setFillColor(250, 204, 21);
+  doc.rect(110, finalY, 4, 30, 'F');
 
-  // Footer
-  doc.setFontSize(8);
+  doc.setDrawColor(226, 232, 240); // slate-200 border
+  doc.rect(110, finalY, 85, 30, 'S');
+
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(150, 150, 150);
-  const dateStr = new Date().toLocaleDateString();
-  doc.text(`Generated by Radical Ledger on ${dateStr}`, 15, 285);
+  doc.setTextColor(100, 116, 139);
+  doc.text('NET TAKE HOME', 122, finalY + 10);
+  
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Rs ${record.netPay?.toLocaleString()}`, 122, finalY + 22);
+
+  // Footer / Watermark
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.5);
+  doc.line(15, 275, 195, 275);
+  
+  doc.setFontSize(8);
+  doc.setTextColor(148, 163, 184); // slate-400
+  doc.text('This is an electronically generated salary slip and does not require a physical signature.', 105, 282, { align: 'center' });
+  doc.text(`Generated by Voicy Platform | ${new Date().toLocaleDateString()}`, 105, 287, { align: 'center' });
 
   return doc.output('arraybuffer');
 };
@@ -87,79 +137,93 @@ export const generateSalarySlipPDF = async (record: any, company: any) => {
 export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   const doc = new jsPDF();
 
-  // Draw an elegant top accent bar
+  // Premium Neo-Brutalism Header for Invoice
+  // Top Yellow Accent Line
   doc.setFillColor(250, 204, 21); // #FACC15
-  doc.rect(0, 0, 210, 6, 'F');
+  doc.rect(0, 0, 210, 8, 'F');
 
-  // Header Background
-  doc.setFillColor(15, 23, 42); // deep slate/navy (#0F172A)
-  doc.rect(0, 6, 210, 44, 'F');
+  // Deep Slate / Navy Header Block
+  doc.setFillColor(15, 23, 42); // #0F172A
+  doc.rect(0, 8, 210, 42, 'F');
   
-  // Title
+  // Voicy Logo in Header (Dark background version)
+  drawVoicyLogo(doc, 15, 22, true);
+  
+  // Invoice Title
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(26);
+  doc.setFontSize(28);
   doc.setFont('helvetica', 'bold');
-  doc.text('INVOICE', 15, 28);
+  doc.text('INVOICE', 195, 30, { align: 'right' });
   
-  // Invoice Number with yellow accent badge
+  // Invoice Number Badge
   doc.setFillColor(250, 204, 21); // #FACC15
-  doc.rect(15, 34, 45, 6, 'F');
+  doc.rect(145, 36, 50, 7, 'F');
   doc.setTextColor(0, 0, 0);
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text(invoice.invoiceNumber, 17, 38.5);
+  doc.text(invoice.invoiceNumber || 'INV-0000', 170, 41, { align: 'center' });
 
-  // Company Details (From)
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text((company?.name || 'Company').toUpperCase(), 195, 25, { align: 'right' });
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(203, 213, 225); // slate-300
-  doc.text(company?.address || '', 195, 32, { align: 'right' });
-  doc.text(company?.country || '', 195, 37, { align: 'right' });
+  let currentY = 70;
 
-  // Client Details (To)
-  doc.setTextColor(100, 116, 139); // slate-500
-  doc.setFontSize(9);
+  // Sender Details (Company)
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.text('BILL TO:', 15, 65);
-  
-  doc.setTextColor(15, 23, 42); // dark slate
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text((invoice?.clientName || 'Client').toUpperCase(), 15, 72);
+  doc.text((company?.name || 'Company').toUpperCase(), 15, currentY);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.setTextColor(71, 85, 105); // slate-600
-  doc.text(invoice?.clientEmail || '', 15, 78);
-  doc.text(invoice?.clientAddress || '', 15, 84);
-
-  // Invoice Meta Info
   doc.setTextColor(100, 116, 139);
+  if (company?.address) doc.text(company.address, 15, currentY + 6);
+  if (company?.country) doc.text(company.country, 15, currentY + 11);
+
+  // Recipient Details (Client)
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(100, 116, 139);
+  doc.text('BILL TO:', 120, currentY);
+  
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(12);
+  doc.text((invoice?.clientName || 'Client').toUpperCase(), 120, currentY + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  if (invoice?.clientEmail) doc.text(invoice.clientEmail, 120, currentY + 12);
+  if (invoice?.clientAddress) doc.text(invoice.clientAddress, 120, currentY + 17);
+
+  currentY += 35;
+
+  // Invoice Meta Info (Dates)
+  doc.setFillColor(248, 250, 252);
+  doc.rect(15, currentY, 180, 15, 'F');
+  doc.setDrawColor(226, 232, 240);
+  doc.rect(15, currentY, 180, 15, 'S');
+
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text('DATE:', 140, 72);
-  doc.text('DUE DATE:', 140, 78);
+  doc.setTextColor(100, 116, 139);
+  doc.text('DATE ISSUED:', 25, currentY + 9);
+  doc.text('DUE DATE:', 110, currentY + 9);
   
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'normal');
-  doc.text(invoice?.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : '', 170, 72);
-  doc.text(invoice?.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '', 170, 78);
+  doc.text(invoice?.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : '', 55, currentY + 9);
+  doc.text(invoice?.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '', 135, currentY + 9);
 
-  // Custom Fields
-  let customFieldsStartY = 95;
+  currentY += 25;
+
+  // Custom Fields (if any)
   if (invoice.customFields && invoice.customFields.length > 0) {
     invoice.customFields.forEach((field: any) => {
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(100, 116, 139);
-      doc.text(`${field.label.toUpperCase()}:`, 15, customFieldsStartY);
+      doc.text(`${field.label.toUpperCase()}:`, 15, currentY);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(15, 23, 42);
-      doc.text(field.value, 45, customFieldsStartY);
-      customFieldsStartY += 6;
+      doc.text(field.value, 50, currentY);
+      currentY += 7;
     });
+    currentY += 5;
   }
 
   // Items Table
@@ -167,84 +231,98 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   const body = items.map((item: any) => [
     item.description || '',
     (item.quantity || 0).toString(),
-    `$${(item.unitPrice || 0).toLocaleString()}`,
-    `$${(item.amount || 0).toLocaleString()}`
+    `Rs ${(item.unitPrice || 0).toLocaleString()}`,
+    `Rs ${(item.amount || 0).toLocaleString()}`
   ]);
 
   autoTable(doc, {
-    startY: Math.max(105, customFieldsStartY + 5),
+    startY: currentY,
     head: [['Description', 'Qty', 'Unit Price', 'Total']],
     body: body,
-    theme: 'striped',
+    theme: 'grid',
     headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
-    styles: { font: 'helvetica', fontSize: 9, cellPadding: 4 },
+    styles: { font: 'helvetica', fontSize: 9, cellPadding: 5 },
     columnStyles: {
+      0: { fontStyle: 'bold', textColor: [15, 23, 42] },
       1: { halign: 'center' },
       2: { halign: 'right' },
-      3: { halign: 'right' }
+      3: { halign: 'right', fontStyle: 'bold', textColor: [15, 23, 42] }
     }
   });
 
-  // Totals Summary Box
-  let finalY = ((doc as any).lastAutoTable?.finalY || 130) + 12;
+  let finalY = ((doc as any).lastAutoTable?.finalY || 130) + 15;
 
-  // Prevent overlap with footer: if not enough space remains, add a new page
-  if (finalY + 35 > 270) {
+  // Check for page overflow
+  if (finalY + 45 > 270) {
     doc.addPage();
-    // Draw top accent bar on new page for aesthetic consistency
-    doc.setFillColor(250, 204, 21); // #FACC15
-    doc.rect(0, 0, 210, 6, 'F');
+    doc.setFillColor(250, 204, 21);
+    doc.rect(0, 0, 210, 8, 'F');
     finalY = 25;
   }
   
-  doc.setFillColor(248, 250, 252); // slate-50
-  doc.rect(130, finalY - 5, 65, 34, 'F');
-  doc.setDrawColor(226, 232, 240); // slate-200
-  doc.rect(130, finalY - 5, 65, 34, 'S');
+  // Totals Summary Box (Aligned Right)
+  doc.setFillColor(248, 250, 252);
+  doc.rect(120, finalY, 75, 40, 'F');
+  
+  // Right Yellow Accent
+  doc.setFillColor(250, 204, 21);
+  doc.rect(191, finalY, 4, 40, 'F');
 
-  doc.setFontSize(8.5);
-  doc.setTextColor(100, 116, 139); // slate-500
+  doc.setDrawColor(226, 232, 240);
+  doc.rect(120, finalY, 75, 40, 'S');
+
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
   doc.setFont('helvetica', 'normal');
-  doc.text('SUBTOTAL:', 135, finalY + 2);
-  doc.text(`TAX (${invoice?.taxRate || 0}%):`, 135, finalY + 8);
+  doc.text('SUBTOTAL:', 125, finalY + 10);
+  doc.text(`TAX (${invoice?.taxRate || 0}%):`, 125, finalY + 18);
   
   doc.setDrawColor(226, 232, 240);
   doc.setLineWidth(0.5);
-  doc.line(130, finalY + 14, 195, finalY + 14);
+  doc.line(125, finalY + 23, 185, finalY + 23);
 
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(15, 23, 42);
-  doc.text('TOTAL AMOUNT:', 135, finalY + 23);
-
-  // Totals Right Values
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(71, 85, 105);
-  doc.text(`$${(invoice?.subtotal || 0).toLocaleString()}`, 190, finalY + 2, { align: 'right' });
-  doc.text(`$${(invoice?.taxAmount || 0).toLocaleString()}`, 190, finalY + 8, { align: 'right' });
-  
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text(`$${(invoice?.totalAmount || 0).toLocaleString()}`, 190, finalY + 23, { align: 'right' });
+  doc.text('TOTAL AMOUNT:', 125, finalY + 32);
+
+  // Totals Values
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Rs ${(invoice?.subtotal || 0).toLocaleString()}`, 185, finalY + 10, { align: 'right' });
+  doc.text(`Rs ${(invoice?.taxAmount || 0).toLocaleString()}`, 185, finalY + 18, { align: 'right' });
+  
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Rs ${(invoice?.totalAmount || 0).toLocaleString()}`, 185, finalY + 32, { align: 'right' });
+
+  // Status Stamp
+  if (invoice?.status && invoice.status.toUpperCase() === 'PAID') {
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 138, 0); // Green
+    // Rotate and stamp
+    doc.text('PAID', 50, finalY + 25, { angle: 25 });
+  }
 
   // Notes Box
   if (invoice.notes) {
     doc.setFillColor(254, 252, 232); // amber-50 light yellow
-    doc.rect(15, finalY - 5, 100, 34, 'F');
-    doc.setDrawColor(254, 240, 138); // amber-200
-    doc.rect(15, finalY - 5, 100, 34, 'S');
+    doc.rect(15, finalY, 95, 40, 'F');
+    doc.setDrawColor(250, 204, 21); // amber accent
+    doc.rect(15, finalY, 95, 40, 'S');
 
-    doc.setFontSize(8.5);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(133, 77, 14); // amber-800
-    doc.text('NOTES / MEMO:', 20, finalY + 2);
+    doc.text('NOTES / MEMO:', 20, finalY + 8);
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(113, 63, 18);
-    doc.text(invoice.notes, 20, finalY + 8, { maxWidth: 90 });
+    doc.text(invoice.notes, 20, finalY + 15, { maxWidth: 85 });
   }
 
   // Footer separator
@@ -256,6 +334,7 @@ export const generateCustomInvoicePDF = async (invoice: any, company: any) => {
   doc.setFontSize(8);
   doc.setTextColor(148, 163, 184); // slate-400
   doc.text('Thank you for your business. For any questions, please contact the issuer.', 105, 282, { align: 'center' });
+  doc.text(`Powered by Voicy Platform`, 105, 287, { align: 'center' });
 
   return doc.output('arraybuffer');
 };

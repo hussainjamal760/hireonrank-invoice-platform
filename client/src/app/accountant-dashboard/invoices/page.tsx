@@ -11,6 +11,7 @@ import {
   Clock, X, Copy, Mail
 } from "lucide-react";
 import { TableSkeleton } from "@/components/TableSkeleton";
+import { exportTableToCSV, exportTableToPDF } from "@/utils/tableExport";
 
 interface Invoice {
   _id: string;
@@ -212,6 +213,31 @@ export default function InvoicesTab() {
     return matchesMonth && matchesStatus && matchesSearch;
   });
 
+  const handleExportCSV = () => {
+    const data = filteredInvoices.map((i: any) => ({
+      "Invoice #": i.invoiceNumber,
+      Type: i.type,
+      Client: i.displayClient,
+      "Period / Due": i.displayDate,
+      Amount: i.displayAmount,
+      Status: i.status
+    }));
+    exportTableToCSV(data, "Invoices_Ledger");
+  };
+
+  const handleExportPDF = () => {
+    const headers = ["Invoice #", "Type", "Client", "Period / Due", "Amount", "Status"];
+    const data = filteredInvoices.map((i: any) => [
+      i.invoiceNumber,
+      i.type,
+      i.displayClient,
+      i.displayDate,
+      `$${i.displayAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      i.status
+    ]);
+    exportTableToPDF("Invoices Ledger", headers, data, "Invoices_Ledger");
+  };
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12 relative">
       {/* Header */}
@@ -329,9 +355,25 @@ export default function InvoicesTab() {
 
       {/* Invoice Ledger Table */}
       <div className="bg-white border-[3px] border-black p-6 shadow-[6px_6px_0_0_#000000]">
-        <h2 className="font-display-md text-2xl uppercase font-black mb-6 border-b-[3px] border-black pb-4 flex items-center gap-2">
-          <FileText size={22} /> Invoices Ledger
-        </h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 border-b-[3px] border-black pb-4 gap-4">
+          <h2 className="font-display-md text-2xl uppercase font-black flex items-center gap-2">
+            <FileText size={22} /> Invoices Ledger
+          </h2>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleExportCSV}
+              className="bg-white text-black border-[2px] border-black px-3 py-1 font-label-caps text-xs font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              CSV
+            </button>
+            <button 
+              onClick={handleExportPDF}
+              className="bg-[#FACC15] text-black border-[2px] border-black px-3 py-1 font-label-caps text-xs font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              PDF
+            </button>
+          </div>
+        </div>
 
         {loading ? (
           <TableSkeleton columns={7} rows={5} />

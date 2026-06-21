@@ -7,6 +7,7 @@ import {
   Trash2, Pencil, X, Check, Search, ShieldAlert, CheckCircle2
 } from "lucide-react";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { exportTableToCSV, exportTableToPDF } from "@/utils/tableExport";
 
 interface Client {
   _id: string;
@@ -153,6 +154,30 @@ export default function ClientsDirectory() {
     c.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleExportCSV = () => {
+    const data = filteredClients.map(c => ({
+      Name: c.name,
+      Email: c.email,
+      Phone: c.phone || "N/A",
+      Address: c.address || "N/A",
+      "Tax ID": c.taxId || "N/A",
+      "Added On": new Date(c.createdAt).toLocaleDateString()
+    }));
+    exportTableToCSV(data, "Clients_Report");
+  };
+
+  const handleExportPDF = () => {
+    const headers = ["Name", "Email", "Phone", "Tax ID", "Added On"];
+    const data = filteredClients.map(c => [
+      c.name,
+      c.email,
+      c.phone || "N/A",
+      c.taxId || "N/A",
+      new Date(c.createdAt).toLocaleDateString()
+    ]);
+    exportTableToPDF("Clients Directory", headers, data, "Clients_Report");
+  };
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12 relative">
       {/* Header */}
@@ -193,8 +218,24 @@ export default function ClientsDirectory() {
             className="w-full pl-10 pr-4 py-3 bg-white border-[3px] border-black font-mono font-bold focus:outline-none focus:bg-[#FACC15]"
           />
         </div>
-        <div className="font-label-caps font-bold text-sm text-black/60">
-          {filteredClients.length} Client(s)
+        <div className="flex items-center gap-4 ml-auto">
+          <div className="font-label-caps font-bold text-sm text-black/60 hidden md:block">
+            {filteredClients.length} Client(s)
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleExportCSV}
+              className="bg-white text-black border-[2px] border-black px-3 py-1.5 font-label-caps text-xs font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              CSV
+            </button>
+            <button 
+              onClick={handleExportPDF}
+              className="bg-[#FACC15] text-black border-[2px] border-black px-3 py-1.5 font-label-caps text-xs font-black shadow-[2px_2px_0_0_#000000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              PDF
+            </button>
+          </div>
         </div>
       </div>
 

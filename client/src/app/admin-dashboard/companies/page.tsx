@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Building2, Search, Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { TableSkeleton } from "@/components/TableSkeleton";
+import { exportTableToCSV, exportTableToPDF } from "@/utils/tableExport";
 
 export default function CompaniesPage() {
   const router = useRouter();
@@ -92,6 +93,31 @@ export default function CompaniesPage() {
     c.ownerEmail.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleExportCSV = () => {
+    const data = filteredCompanies.map(c => ({
+      "Company Name": c.name,
+      "Owner Name": c.ownerName,
+      "Owner Email": c.ownerEmail,
+      Employees: c.employeeCount,
+      Clients: c.clientCount,
+      Status: c.status
+    }));
+    exportTableToCSV(data, "Companies_Registry");
+  };
+
+  const handleExportPDF = () => {
+    const headers = ["Company Name", "Owner Name", "Owner Email", "Employees", "Clients", "Status"];
+    const data = filteredCompanies.map(c => [
+      c.name,
+      c.ownerName,
+      c.ownerEmail,
+      c.employeeCount,
+      c.clientCount,
+      c.status
+    ]);
+    exportTableToPDF("Companies Registry", headers, data, "Companies_Registry");
+  };
+
 
 
   return (
@@ -109,17 +135,33 @@ export default function CompaniesPage() {
           </div>
           <h1 className="font-display-lg text-5xl md:text-6xl text-black uppercase font-black tracking-tighter">Companies</h1>
         </div>
-        <div className="flex items-center w-full md:w-auto relative group">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-black" />
+        <div className="flex flex-col md:flex-row items-start md:items-center w-full md:w-auto gap-4 group">
+          <div className="flex gap-2">
+            <button 
+              onClick={handleExportCSV}
+              className="bg-white text-black border-[3px] border-black px-4 py-3 font-label-caps text-xs font-black shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
+            >
+              CSV
+            </button>
+            <button 
+              onClick={handleExportPDF}
+              className="bg-[#FACC15] text-black border-[3px] border-black px-4 py-3 font-label-caps text-xs font-black shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
+            >
+              PDF
+            </button>
           </div>
-          <input
-            type="text"
-            placeholder="Search registry..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:w-[300px] bg-white border-[3px] border-black pl-12 pr-4 py-3 font-body-md text-black placeholder:text-black/40 focus:outline-none focus:ring-0 shadow-[4px_4px_0_0_#000000] focus:shadow-none focus:translate-x-[4px] focus:translate-y-[4px] transition-all"
-          />
+          <div className="relative w-full md:w-[300px]">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-black" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search registry..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white border-[3px] border-black pl-12 pr-4 py-3 font-body-md text-black placeholder:text-black/40 focus:outline-none focus:ring-0 shadow-[4px_4px_0_0_#000000] focus:shadow-none focus:translate-x-[4px] focus:translate-y-[4px] transition-all"
+            />
+          </div>
         </div>
       </motion.div>
 
