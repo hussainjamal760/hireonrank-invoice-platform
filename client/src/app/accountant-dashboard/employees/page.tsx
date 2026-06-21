@@ -6,9 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, UserPlus, Mail, ShieldAlert, CheckCircle2,
   Trash2, X, DollarSign, Plus, Settings, CreditCard,
-  Briefcase, Percent, ShieldQuestion, UserCheck
+  Briefcase, Percent, ShieldQuestion, UserCheck, Download
 } from "lucide-react";
 import { TableSkeleton } from "@/components/TableSkeleton";
+import { exportTableToCSV, exportTableToPDF } from "@/utils/tableExport";
 
 interface Employee {
   _id: string;
@@ -217,6 +218,29 @@ export default function EmployeesTab() {
     return Math.max(0, base + bonus + totalAllowances - deduction - totalTaxes);
   };
 
+  const handleExportCSV = () => {
+    const data = filteredEmployees.map(emp => ({
+      Name: emp.name,
+      Email: emp.email,
+      Department: emp.department || "N/A",
+      Designation: emp.designation || "N/A",
+      "Base Salary": `${getCurrencySymbol(emp.currency || 'USD')}${emp.salary}`
+    }));
+    exportTableToCSV(data, "Employees_Report");
+  };
+
+  const handleExportPDF = () => {
+    const headers = ["Name", "Email", "Department", "Designation", "Base Salary"];
+    const data = filteredEmployees.map(emp => [
+      emp.name,
+      emp.email,
+      emp.department || "N/A",
+      emp.designation || "N/A",
+      `${getCurrencySymbol(emp.currency || 'USD')}${emp.salary}`
+    ]);
+    exportTableToPDF("Employees Directory", headers, data, "Employees_Report");
+  };
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12">
       {/* Header */}
@@ -229,12 +253,26 @@ export default function EmployeesTab() {
           <h1 className="font-display-lg text-5xl md:text-6xl text-black uppercase font-black tracking-tighter">Employees Tab</h1>
           <p className="font-body-md text-on-surface-variant font-bold mt-2">Manage employee compensation, allowances, and tax deductions.</p>
         </div>
-        <button 
-          onClick={() => router.push('/accountant-dashboard/users')}
-          className="bg-[#FACC15] text-black border-[3px] border-black px-6 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-black hover:text-[#FACC15] transition-colors shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
-        >
-          Add Employee
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleExportCSV}
+            className="bg-white text-black border-[3px] border-black px-4 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] flex items-center gap-2"
+          >
+            <Download size={16} /> CSV
+          </button>
+          <button 
+            onClick={handleExportPDF}
+            className="bg-white text-black border-[3px] border-black px-4 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] flex items-center gap-2"
+          >
+            <Download size={16} /> PDF
+          </button>
+          <button 
+            onClick={() => router.push('/accountant-dashboard/users')}
+            className="bg-[#FACC15] text-black border-[3px] border-black px-6 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-black hover:text-[#FACC15] transition-colors shadow-[4px_4px_0_0_#000000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
+          >
+            Add Employee
+          </button>
+        </div>
       </motion.div>
 
       {/* Notifications */}

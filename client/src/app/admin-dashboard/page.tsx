@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { useCurrencyConverter } from "@/components/useCurrencyConverter";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
+import { exportTableToPDF } from "@/utils/tableExport";
 
 const iconMap: Record<string, any> = {
   FileText: FileText,
@@ -165,6 +166,19 @@ export default function AdminDashboard() {
     return val.toString();
   };
 
+  const handleDownloadReport = () => {
+    const headers = ["Metric", "Value"];
+    const data = [
+      ["Total Companies", formatNumber(stats.totalCompanies)],
+      ["Active Users", formatNumber(stats.totalUsers)],
+      ["Total Invoices", formatNumber(stats.totalInvoices)],
+      ["Revenue Processed", displayCurrency(stats.totalRevenue)],
+      ["Payroll Executed", displayCurrency(stats.totalPayroll)],
+      ["System Load", `${stats.systemLoad}%`]
+    ];
+    exportTableToPDF("Admin Command Center Report", headers, data, "Admin_Dashboard_Report");
+  };
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-12">
       
@@ -182,8 +196,8 @@ export default function AdminDashboard() {
           <h1 className="font-display-lg text-5xl md:text-6xl text-black uppercase font-black tracking-tighter">Command Center</h1>
         </div>
         <div className="flex items-center gap-4">
-          <button className="text-black font-label-caps text-xs tracking-widest uppercase font-bold hover:underline underline-offset-4 decoration-[2px]">Generate Report</button>
-          <button className="bg-black text-white border-[3px] border-black px-6 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-[#FACC15] hover:text-black transition-colors shadow-[4px_4px_0_0_#000000]">
+          <button onClick={handleDownloadReport} className="text-black font-label-caps text-xs tracking-widest uppercase font-bold hover:underline underline-offset-4 decoration-[2px]">Download PDF Report</button>
+          <button onClick={handleDownloadReport} className="bg-black text-white border-[3px] border-black px-6 py-3 font-label-caps text-xs tracking-widest uppercase font-black hover:bg-[#FACC15] hover:text-black transition-colors shadow-[4px_4px_0_0_#000000]">
             Export Data
           </button>
         </div>
