@@ -52,8 +52,8 @@ export function Navbar() {
   const initial = user?.email ? user.email.charAt(0).toUpperCase() : "?";
 
   return (
-    <>
-      <nav className="sticky top-0 w-full z-50 bg-background border-b-[3px] border-on-background flex justify-between items-center px-margin-desktop py-4">
+    <header className="sticky top-0 z-50 w-full flex flex-col">
+      <nav className="w-full bg-background border-b-[3px] border-on-background flex justify-between items-center px-margin-desktop py-4 relative z-50">
         <Link href="/" className="font-headline-md text-headline-md font-black italic text-on-background flex items-center gap-2">
           <div className="w-8 h-8 bg-primary-container border-[3px] border-on-background flex items-center justify-center">
             <Zap size={20} className="text-on-background" />
@@ -114,51 +114,53 @@ export function Navbar() {
             </>
           )}
         </div>
-        <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+        <button className="md:hidden relative z-50" onClick={() => setIsMenuOpen(!isMenuOpen)}>
           {isMenuOpen ? <X size={32} /> : <Menu size={32} />}
         </button>
       </nav>
 
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="md:hidden border-b-[3px] border-on-background bg-surface-container overflow-hidden"
-          >
-            <div className="flex flex-col p-6 gap-6">
-              <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-2xl uppercase font-black" href="/platform">Platform</Link>
-              <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-2xl uppercase font-black" href="/design">Design</Link>
-              <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-2xl uppercase font-black" href="/payroll">Payroll</Link>
-              <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-2xl uppercase font-black" href="/pricing">Pricing</Link>
-              <div className="flex flex-col gap-4 mt-4 border-t-[3px] border-on-background pt-6">
-                {user ? (
-                  <>
-                    <div className="p-3 bg-surface-container-low border-[3px] border-on-background truncate">
-                      <p className="font-bold text-xs text-on-surface-variant">Signed in as</p>
-                      <p className="font-label-caps uppercase font-black truncate">{user.email}</p>
-                    </div>
-                    <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-xl uppercase font-black flex items-center gap-2" href={getDashboardLink()}>
-                      <LayoutDashboard size={20} /> Dashboard
-                    </Link>
-                    <button onClick={handleLogout} className="font-headline-md text-xl uppercase font-black text-[#D32F2F] text-left flex items-center gap-2">
-                      <LogOut size={20} /> Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-xl uppercase font-black text-center" href="/login">Log in</Link>
-                    <Link onClick={() => setIsMenuOpen(false)} href="/signup" className="bg-primary-container text-on-background w-full py-4 font-label-caps text-lg border-[3px] border-on-background neo-brutal-shadow uppercase font-black text-center block">
-                      Start Free
-                    </Link>
-                  </>
-                )}
+      <div className="relative w-full z-40">
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="md:hidden absolute top-0 left-0 w-full border-b-[3px] border-on-background bg-surface-container overflow-hidden shadow-[0_20px_20px_rgba(0,0,0,0.2)]"
+            >
+              <div className="flex flex-col p-6 gap-6">
+                <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-2xl uppercase font-black" href="/platform">Platform</Link>
+                <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-2xl uppercase font-black" href="/design">Design</Link>
+                <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-2xl uppercase font-black" href="/payroll">Payroll</Link>
+                <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-2xl uppercase font-black" href="/pricing">Pricing</Link>
+                <div className="flex flex-col gap-4 mt-4 border-t-[3px] border-on-background pt-6">
+                  {user ? (
+                    <>
+                      <div className="p-3 bg-surface-container-low border-[3px] border-on-background truncate">
+                        <p className="font-bold text-xs text-on-surface-variant">Signed in as</p>
+                        <p className="font-label-caps uppercase font-black truncate">{user.email}</p>
+                      </div>
+                      <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-xl uppercase font-black flex items-center gap-2" href={getDashboardLink()}>
+                        <LayoutDashboard size={20} /> Dashboard
+                      </Link>
+                      <button onClick={handleLogout} className="font-headline-md text-xl uppercase font-black text-[#D32F2F] text-left flex items-center gap-2">
+                        <LogOut size={20} /> Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-xl uppercase font-black text-center" href="/login">Log in</Link>
+                      <Link onClick={() => setIsMenuOpen(false)} href="/signup" className="bg-primary-container text-on-background w-full py-4 font-label-caps text-lg border-[3px] border-on-background neo-brutal-shadow uppercase font-black text-center block">
+                        Start Free
+                      </Link>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </header>
   );
 }
