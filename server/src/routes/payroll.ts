@@ -265,6 +265,34 @@ router.post(
         ? await PayrollRecord.insertMany(newRecords)
         : [];
 
+      // Send notification emails immediately
+      try {
+        const company = await Company.findById(companyId);
+        const companyName = company ? company.name : 'Our Company';
+        const { sendPayrollEmail } = await import('../utils/email');
+        const { EmployeeProfile } = await import('../models');
+
+        for (const record of records) {
+          try {
+            const profile = await EmployeeProfile.findOne({ employeeId: record.employeeId });
+            const currency = profile ? profile.currency : 'USD';
+
+            await sendPayrollEmail(
+              record.employeeEmail,
+              record.employeeName,
+              record.period,
+              record.netPay,
+              currency,
+              companyName
+            );
+          } catch (emailErr) {
+            console.error(`Failed to send bulk payroll email to ${record.employeeEmail}:`, emailErr);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to process bulk payroll emails:', err);
+      }
+
       // Log the activity
       await ActivityLog.create({
         companyId,
