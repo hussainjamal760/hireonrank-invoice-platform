@@ -530,27 +530,6 @@ router.post('/join-as-employee', authenticateToken, async (req: AuthRequest, res
       $set: { name, age: parseInt(age), occupation, phoneNumber }
     });
 
-    // 2. Remove user from all existing companies
-    const existingMemberships = await UserCompany.find({ userId: req.user.userId });
-    for (const membership of existingMemberships) {
-      if (membership.role === 'OWNER') {
-        const ownerCount = await UserCompany.countDocuments({
-          companyId: membership.companyId,
-          role: 'OWNER'
-        });
-        if (ownerCount <= 1) {
-          // Sole owner: delete the company and all related memberships
-          await UserCompany.deleteMany({ companyId: membership.companyId });
-          await Employee.deleteMany({ companyId: membership.companyId });
-          await Company.findByIdAndDelete(membership.companyId);
-          continue;
-        }
-      }
-      await UserCompany.findByIdAndDelete(membership._id);
-    }
-
-    // Also remove any existing employee records for this user in other companies
-    await Employee.deleteMany({ userId: req.user.userId });
 
     // 3. Mark invitation as accepted
     invitation.status = 'ACCEPTED';
