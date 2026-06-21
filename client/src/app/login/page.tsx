@@ -202,7 +202,7 @@ export default function Login() {
       } else if (inviteToken) {
         router.push(`/join?token=${inviteToken}`);
       } else if (data.state === "NO_COMPANY_STATE") {
-        router.push("/create-company");
+        router.push("/setup-company");
       } else {
         if (data.role === 'EMPLOYEE') {
           router.push("/employee-dashboard");

@@ -55,13 +55,16 @@ export default function AccountantLayout({ children }: { children: React.ReactNo
     }
 
     const decoded = decodeToken(token);
-    if (decoded && decoded.role === 'EMPLOYEE') {
-      router.push("/employee-dashboard");
+    if (!decoded || !['ACCOUNTANT', 'ADMIN', 'OWNER'].includes(decoded.role)) {
+      if (decoded && decoded.role === 'EMPLOYEE') {
+        router.push("/employee-dashboard");
+      } else {
+        router.push("/login");
+      }
       return;
-    } else {
-      setNavItems(NAV_ITEMS);
     }
 
+    setNavItems(NAV_ITEMS);
     setAuthorized(true);
   }, [router, pathname]);
 

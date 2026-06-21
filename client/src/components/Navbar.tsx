@@ -45,7 +45,7 @@ export function Navbar() {
     if (user.role === "ADMIN") return "/admin-dashboard";
     if (user.role === "OWNER" || user.role === "ACCOUNTANT") return "/accountant-dashboard";
     // If no company context yet, might need to create company
-    if (user.currentCompanyId === null) return "/create-company";
+    if (user.currentCompanyId === null) return "/setup-company";
     return "/accountant-dashboard"; // fallback
   };
 
@@ -150,7 +150,7 @@ export function Navbar() {
                   ) : (
                     <>
                       <Link onClick={() => setIsMenuOpen(false)} className="font-headline-md text-xl uppercase font-black text-center" href="/login">Log in</Link>
-                      <Link onClick={() => setIsMenuOpen(false)} href="/signup" className="bg-primary-container text-on-background w-full py-4 font-label-caps text-lg border-[3px] border-on-background neo-brutal-shadow uppercase font-black text-center block">
+                      <Link onClick={() => setIsMenuOpen(false)} href="/login" className="bg-primary-container text-on-background w-full py-4 font-label-caps text-lg border-[3px] border-on-background neo-brutal-shadow uppercase font-black text-center block">
                         Start Free
                       </Link>
                     </>

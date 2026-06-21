@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { Employee, Invoice, PayrollInvoice, ActivityLog, UserCompany } from '../models';
 import mongoose from 'mongoose';
 import { authenticateToken, requireCompany, AuthRequest } from '../middleware/auth';
+import { convertToUSD } from '../utils/currency';
 
 const router = Router();
 
@@ -54,22 +55,33 @@ router.get(
         Invoice.countDocuments({ companyId }),
         Invoice.aggregate([
           { $match: { companyId: companyId, status: 'PAID' } },
-          { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+          { $group: { _id: { $ifNull: ['$currency', 'USD'] }, total: { $sum: '$totalAmount' } } }
         ]),
         Invoice.aggregate([
           { $match: { companyId: companyId, status: 'SENT' } },
-          { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+          { $group: { _id: { $ifNull: ['$currency', 'USD'] }, total: { $sum: '$totalAmount' } } }
         ]),
         PayrollInvoice.aggregate([
           { $match: { companyId: companyId, status: 'paid' } },
-          { $group: { _id: null, total: { $sum: '$amount' } } }
+          { $lookup: { from: 'employeeprofiles', localField: 'employeeId', foreignField: 'employeeId', as: 'profile' } },
+          { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+          { $group: { _id: { $ifNull: ['$profile.currency', 'USD'] }, total: { $sum: '$amount' } } }
         ]),
         UserCompany.countDocuments({ companyId })
       ]);
 
-      const totalRevenue = totalRevenueAgg.length > 0 ? totalRevenueAgg[0].total : 0;
-      const pendingRevenue = pendingRevenueAgg.length > 0 ? pendingRevenueAgg[0].total : 0;
-      const totalPayroll = totalPayrollAgg.length > 0 ? totalPayrollAgg[0].total : 0;
+      // Helper to sum currency-grouped aggregates
+      const sumAgg = async (agg: any[]) => {
+        let sum = 0;
+        for (const item of agg) {
+          sum += await convertToUSD(item.total, item._id || 'USD');
+        }
+        return sum;
+      };
+
+      const totalRevenue = await sumAgg(totalRevenueAgg);
+      const pendingRevenue = await sumAgg(pendingRevenueAgg);
+      const totalPayroll = await sumAgg(totalPayrollAgg);
 
       // --- Current month counts (for trend comparison) ---
       const [
@@ -84,15 +96,17 @@ router.get(
         Invoice.countDocuments({ companyId, createdAt: { $gte: currentMonthStart } }),
         Invoice.aggregate([
           { $match: { companyId: companyId, status: 'PAID', paidAt: { $gte: currentMonthStart } } },
-          { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+          { $group: { _id: { $ifNull: ['$currency', 'USD'] }, total: { $sum: '$totalAmount' } } }
         ]),
         Invoice.aggregate([
           { $match: { companyId: companyId, status: 'SENT', issueDate: { $gte: currentMonthStart } } },
-          { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+          { $group: { _id: { $ifNull: ['$currency', 'USD'] }, total: { $sum: '$totalAmount' } } }
         ]),
         PayrollInvoice.aggregate([
           { $match: { companyId: companyId, status: 'paid', createdAt: { $gte: currentMonthStart } } },
-          { $group: { _id: null, total: { $sum: '$amount' } } }
+          { $lookup: { from: 'employeeprofiles', localField: 'employeeId', foreignField: 'employeeId', as: 'profile' } },
+          { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+          { $group: { _id: { $ifNull: ['$profile.currency', 'USD'] }, total: { $sum: '$amount' } } }
         ]),
         UserCompany.countDocuments({ companyId, createdAt: { $gte: currentMonthStart } })
       ]);
@@ -116,15 +130,17 @@ router.get(
         }),
         Invoice.aggregate([
           { $match: { companyId: companyId, status: 'PAID', paidAt: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
-          { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+          { $group: { _id: { $ifNull: ['$currency', 'USD'] }, total: { $sum: '$totalAmount' } } }
         ]),
         Invoice.aggregate([
           { $match: { companyId: companyId, status: 'SENT', issueDate: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
-          { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+          { $group: { _id: { $ifNull: ['$currency', 'USD'] }, total: { $sum: '$totalAmount' } } }
         ]),
         PayrollInvoice.aggregate([
           { $match: { companyId: companyId, status: 'paid', createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
-          { $group: { _id: null, total: { $sum: '$amount' } } }
+          { $lookup: { from: 'employeeprofiles', localField: 'employeeId', foreignField: 'employeeId', as: 'profile' } },
+          { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+          { $group: { _id: { $ifNull: ['$profile.currency', 'USD'] }, total: { $sum: '$amount' } } }
         ]),
         UserCompany.countDocuments({
           companyId,
@@ -132,13 +148,13 @@ router.get(
         })
       ]);
 
-      const currentMonthRevenue = currentMonthRevenueAgg.length > 0 ? currentMonthRevenueAgg[0].total : 0;
-      const currentMonthPending = currentMonthPendingAgg.length > 0 ? currentMonthPendingAgg[0].total : 0;
-      const currentMonthPayroll = currentMonthPayrollAgg.length > 0 ? currentMonthPayrollAgg[0].total : 0;
+      const currentMonthRevenue = await sumAgg(currentMonthRevenueAgg);
+      const currentMonthPending = await sumAgg(currentMonthPendingAgg);
+      const currentMonthPayroll = await sumAgg(currentMonthPayrollAgg);
 
-      const prevMonthRevenue = prevMonthRevenueAgg.length > 0 ? prevMonthRevenueAgg[0].total : 0;
-      const prevMonthPending = prevMonthPendingAgg.length > 0 ? prevMonthPendingAgg[0].total : 0;
-      const prevMonthPayroll = prevMonthPayrollAgg.length > 0 ? prevMonthPayrollAgg[0].total : 0;
+      const prevMonthRevenue = await sumAgg(prevMonthRevenueAgg);
+      const prevMonthPending = await sumAgg(prevMonthPendingAgg);
+      const prevMonthPayroll = await sumAgg(prevMonthPayrollAgg);
 
       return res.status(200).json({
         totalEmployees,
@@ -195,7 +211,8 @@ router.get(
           $group: {
             _id: {
               year: { $year: '$paidAt' },
-              month: { $month: '$paidAt' }
+              month: { $month: '$paidAt' },
+              currency: { $ifNull: ['$currency', 'USD'] }
             },
             revenue: { $sum: '$totalAmount' }
           }
@@ -209,7 +226,8 @@ router.get(
       const revenueMap = new Map<string, number>();
       for (const entry of revenueData) {
         const key = `${entry._id.year}-${entry._id.month}`;
-        revenueMap.set(key, entry.revenue);
+        const usdValue = await convertToUSD(entry.revenue, entry._id.currency);
+        revenueMap.set(key, (revenueMap.get(key) || 0) + usdValue);
       }
 
       // Generate the last 6 months with zero-filling for missing months

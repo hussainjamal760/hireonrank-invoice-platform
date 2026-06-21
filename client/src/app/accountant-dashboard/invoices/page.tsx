@@ -30,6 +30,7 @@ interface Invoice {
   items?: any[];
   employeeId?: any;
   clientEmail?: string;
+  currency?: string;
 }
 
 export default function InvoicesTab() {
@@ -66,6 +67,18 @@ export default function InvoicesTab() {
   const [runMonth, setRunMonth] = useState("");
   const [runLoading, setRunLoading] = useState(false);
 
+  const getCurrencySymbol = (currencyCode?: string) => {
+    switch(currencyCode?.toUpperCase()) {
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'INR': return '₹';
+      case 'PKR': return 'Rs ';
+      case 'AUD': return 'A$';
+      case 'CAD': return 'C$';
+      case 'USD': default: return '$';
+    }
+  };
+
   const decodeCompanyId = () => {
     const token = localStorage.getItem("token");
     if (!token) return null;
@@ -98,6 +111,7 @@ export default function InvoicesTab() {
         type: 'CUSTOM',
         displayClient: inv.clientName,
         displayAmount: inv.totalAmount,
+        currency: inv.currency || 'USD',
         displayDate: new Date(inv.dueDate).toLocaleDateString()
       }));
 
@@ -247,7 +261,7 @@ export default function InvoicesTab() {
       i.type,
       i.displayClient,
       i.displayDate,
-      `$${i.displayAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+      `${getCurrencySymbol(i.currency)}${i.displayAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
       i.status
     ]);
     exportTableToPDF("Invoices Ledger", headers, data, "Invoices_Ledger");
@@ -437,7 +451,7 @@ export default function InvoicesTab() {
                       </td>
                       <td className="p-4 border-r-[2px] border-black font-bold text-xs">{inv.displayDate}</td>
                       <td className="p-4 border-r-[2px] border-black bg-[#FACC15]/10 font-bold text-black text-base">
-                        ${inv.displayAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {getCurrencySymbol(inv.currency || "USD")}{inv.displayAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
                       <td className="p-4 border-r-[2px] border-black font-bold">
                         <span className={`border-[2px] border-black px-2 py-1 text-xs font-black uppercase shadow-[1px_1px_0_0_#000000] ${getStatusColor(inv.status)}`}>
@@ -681,7 +695,7 @@ export default function InvoicesTab() {
                   </div>
                   <div className="font-bold text-xl mb-1">{selectedInvoice.displayClient}</div>
                   <div className="font-mono text-3xl font-black text-black">
-                    ${selectedInvoice.displayAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {getCurrencySymbol(selectedInvoice.currency)}{selectedInvoice.displayAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </div>
                 </div>
 
@@ -739,9 +753,9 @@ export default function InvoicesTab() {
                         <div key={idx} className="flex justify-between border-b-[1px] border-black/20/20 pb-2">
                           <div>
                             <div className="font-bold">{item.description}</div>
-                            <div className="text-black/60 text-xs">{item.quantity} x ${item.unitPrice}</div>
+                            <div className="text-black/60 text-xs">{item.quantity} x {getCurrencySymbol(selectedInvoice.currency)}{item.unitPrice}</div>
                           </div>
-                          <div className="font-black">${item.amount.toLocaleString()}</div>
+                          <div className="font-black">{getCurrencySymbol(selectedInvoice.currency)}{item.amount.toLocaleString()}</div>
                         </div>
                       ))}
                     </div>

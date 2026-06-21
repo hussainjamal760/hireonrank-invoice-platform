@@ -537,7 +537,7 @@ export default function EmployeesTab() {
                     <div>
                       <span className="font-label-caps uppercase text-xs font-black text-black">Net Salary Projection</span>
                       <div className="font-mono text-2xl font-black text-black">
-                        ${calculateNetPay().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {getCurrencySymbol(employeeProfile.currency || 'USD')}{calculateNetPay().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </div>
                     <button
