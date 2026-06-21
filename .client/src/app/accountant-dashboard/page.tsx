@@ -61,25 +61,25 @@ export default function AccountantDashboard() {
       const statsRes = await fetch("/api/dashboard/stats", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const statsData = await statsRes.json();
+      const statsData = statsRes.ok ? await statsRes.json() : null;
       
       // 2. Fetch Activity log feed
       const activityRes = await fetch("/api/dashboard/activity", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const activityData = await activityRes.json();
+      const activityData = activityRes.ok ? await activityRes.json() : [];
 
       // 3. Fetch Revenue Chart
       const revenueChartRes = await fetch("/api/dashboard/revenue-chart", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const revenueChartData = await revenueChartRes.json();
+      const revenueChartData = revenueChartRes.ok ? await revenueChartRes.json() : [];
 
       // 4. Fetch Invoice Chart
       const invoiceChartRes = await fetch("/api/dashboard/invoice-chart", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const invoiceChartData = await invoiceChartRes.json();
+      const invoiceChartData = invoiceChartRes.ok ? await invoiceChartRes.json() : [];
 
       // 5. Fetch payroll invoices to calculate status breakdown
       const base64Url = token.split(".")[1];
