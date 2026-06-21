@@ -471,6 +471,149 @@ router.post('/join', authenticateToken, async (req: AuthRequest, res: Response, 
   }
 });
 
+router.post('/join-as-employee', authenticateToken, async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { token, name, age, occupation, phoneNumber, department } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: 'Invitation token is required' });
+    }
+    if (!name || !age || !occupation || !phoneNumber) {
+      return res.status(400).json({ message: 'All profile fields are required (name, age, occupation, phoneNumber)' });
+    }
+
+    const invitation = await Invitation.findOne({ token });
+    if (!invitation) {
+      return res.status(400).json({ message: 'Invalid or expired invitation token' });
+    }
+
+    if (invitation.status === 'ACCEPTED') {
+      if (invitation.email !== req.user.email) {
+        return res.status(400).json({ message: 'This invitation has already been used by another account' });
+      }
+      const existingMembership = await UserCompany.findOne({
+        userId: req.user.userId,
+        companyId: invitation.companyId
+      });
+      if (existingMembership) {
+        const company = await Company.findById(invitation.companyId);
+        if (company) {
+          const newToken = generateToken(req.user.userId, req.user.email, company._id.toString(), existingMembership.role);
+          return res.status(200).json({
+            success: true,
+            token: newToken,
+            companyId: company._id,
+            role: existingMembership.role,
+            company: { id: company._id, name: company.name, logo: company.logo }
+          });
+        }
+      }
+    }
+
+    if (invitation.status !== 'PENDING') {
+      return res.status(400).json({ message: 'Invitation is no longer active' });
+    }
+
+    if (invitation.email !== req.user.email) {
+      return res.status(400).json({
+        message: `This invitation was sent to ${invitation.email}, but you are signed in as ${req.user.email}`
+      });
+    }
+
+    // 1. Update user profile
+    await User.findByIdAndUpdate(req.user.userId, {
+      $set: { name, age: parseInt(age), occupation, phoneNumber }
+    });
+
+    // 2. Remove user from all existing companies
+    const existingMemberships = await UserCompany.find({ userId: req.user.userId });
+    for (const membership of existingMemberships) {
+      if (membership.role === 'OWNER') {
+        const ownerCount = await UserCompany.countDocuments({
+          companyId: membership.companyId,
+          role: 'OWNER'
+        });
+        if (ownerCount <= 1) {
+          // Sole owner: delete the company and all related memberships
+          await UserCompany.deleteMany({ companyId: membership.companyId });
+          await Employee.deleteMany({ companyId: membership.companyId });
+          await Company.findByIdAndDelete(membership.companyId);
+          continue;
+        }
+      }
+      await UserCompany.findByIdAndDelete(membership._id);
+    }
+
+    // Also remove any existing employee records for this user in other companies
+    await Employee.deleteMany({ userId: req.user.userId });
+
+    // 3. Mark invitation as accepted
+    invitation.status = 'ACCEPTED';
+    await invitation.save();
+
+    // 4. Create membership in the new company
+    await UserCompany.create({
+      userId: req.user.userId,
+      companyId: invitation.companyId,
+      role: invitation.role
+    });
+
+    // 5. Create employee record
+    const userDoc = await User.findById(req.user.userId);
+    let employeeRecord = await Employee.findOne({
+      companyId: invitation.companyId,
+      email: req.user.email
+    });
+
+    if (!employeeRecord) {
+      await Employee.create({
+        companyId: invitation.companyId,
+        userId: req.user.userId,
+        name: name,
+        email: req.user.email,
+        phone: phoneNumber,
+        salary: 0,
+        designation: occupation,
+        department: department || undefined,
+        status: 'ACTIVE'
+      });
+    } else {
+      employeeRecord.userId = req.user.userId as any;
+      employeeRecord.name = name;
+      employeeRecord.phone = phoneNumber;
+      employeeRecord.designation = occupation;
+      if (department) employeeRecord.department = department;
+      await employeeRecord.save();
+    }
+
+    // 6. Generate new JWT with company context
+    const company = await Company.findById(invitation.companyId);
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    const newToken = generateToken(
+      req.user.userId,
+      req.user.email,
+      company._id.toString(),
+      invitation.role
+    );
+
+    return res.status(200).json({
+      success: true,
+      token: newToken,
+      companyId: company._id,
+      role: invitation.role,
+      company: { id: company._id, name: company.name, logo: company.logo }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.put(
   '/setup',
   authenticateToken,
