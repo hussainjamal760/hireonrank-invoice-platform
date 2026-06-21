@@ -14,8 +14,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Voicy | Ai invoice Buddy",
-  description: "Voicy is AI powered buddy",
+  title: "Voicy — AI-Powered Invoicing & Payroll Automation",
+  description: "Streamline your financial operations with Voicy. Your ultimate command center for smart invoicing, payroll management, and business growth.",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
+  openGraph: {
+    title: "Voicy — AI-Powered Invoicing & Payroll Automation",
+    description: "Your ultimate command center for smart invoicing, payroll management, and business growth.",
+    type: "website",
+    siteName: "Voicy",
+  },
 };
 
 export default function RootLayout({

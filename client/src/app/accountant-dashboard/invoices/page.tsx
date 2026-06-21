@@ -67,7 +67,7 @@ export default function InvoicesTab() {
   const [runMonth, setRunMonth] = useState("");
   const [runLoading, setRunLoading] = useState(false);
 
-  const getCurrencySymbol = (currencyCode: string) => {
+  const getCurrencySymbol = (currencyCode?: string) => {
     switch(currencyCode?.toUpperCase()) {
       case 'EUR': return '€';
       case 'GBP': return '£';
